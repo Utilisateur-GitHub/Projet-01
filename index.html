@@ -1,21 +1,489 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="fr">
 <head>
-    <title></title>
-    <link href="./resources/css/index.css" type="text/css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RésidanatPro — La plateforme de préparation au Résidanat</title>
+  <meta name="description" content="Préparez le Résidanat avec confiance. Banque de questions, simulations d'examens, flashcards et analytics personnalisés pour les étudiants en médecine.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+  <link rel="stylesheet" href="resources/css/main.css">
+  <style>
+    .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+    .cta-gradient { background: linear-gradient(135deg, var(--primary-800) 0%, var(--primary-600) 40%, var(--cyan-600) 100%); }
+    .faq-item { border-bottom: 1px solid var(--gray-200); }
+    .faq-question { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 0; cursor: pointer; font-weight: 600; color: var(--gray-800); font-size: 1.0625rem; }
+    .faq-answer { padding-bottom: 1.25rem; color: var(--gray-600); line-height: 1.7; display: none; }
+    .faq-item.open .faq-answer { display: block; }
+    .faq-icon { transition: transform 0.2s; font-size: 1.375rem; color: var(--gray-400); flex-shrink: 0; line-height: 1; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .mobile-menu { display: none; position: fixed; inset: 0; background: var(--white); z-index: 200; flex-direction: column; padding: 2rem; }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu nav { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 2rem; }
+    .mobile-menu nav a { padding: 0.875rem 1rem; font-size: 1.0625rem; font-weight: 500; color: var(--gray-700); border-radius: var(--radius-lg); }
+    .mobile-menu nav a:hover { background: var(--gray-100); }
+    @media (max-width: 1023px) { .hero-grid { grid-template-columns: 1fr; } .hero-visual { display: none; } }
+    @media (max-width: 767px) { .footer-grid { grid-template-columns: 1fr 1fr !important; } .pricing-grid { grid-template-columns: 1fr !important; } .steps-grid { grid-template-columns: 1fr !important; } }
+  </style>
 </head>
-
 <body>
-    <h1>Projet-1</h1>
-    <p>J'apprends à coder ! Mes objectifs incluent :</p>
-    <ul>
-        <li>Apprendre à coder</li>
-        <li>Créer une entreprise</li>
-        <li>Aider le monde</li>
-    </ul>
-    <p>C'est l'un de mes sites Web préférés :<a href="https://github.com/" target="_blank">GitHub</a></p>
 
+<!-- NAVBAR -->
+<nav class="landing-navbar transparent" id="landingNav">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="logo-icon">R</div>
+      <span>RésidanatPro</span>
+    </a>
+    <div class="navbar-nav" id="desktopNav">
+      <a href="#features">Fonctionnalités</a>
+      <a href="#how-it-works">Comment ça marche</a>
+      <a href="#pricing">Tarifs</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="navbar-actions">
+      <a href="auth.html" class="btn btn-outline-white" id="navLoginBtn">Connexion</a>
+      <a href="auth.html?tab=register" class="btn btn-cyan btn-sm">Commencer gratuitement</a>
+      <button class="btn btn-ghost btn-icon" id="menuToggle" style="display:none;color:white;">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="navbar-brand" style="color:var(--primary-700);">
+      <div class="logo-icon">R</div>
+      <span>RésidanatPro</span>
+    </div>
+    <button class="btn btn-ghost btn-icon" id="menuClose">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <nav>
+    <a href="#features" onclick="closeMobileMenu()">Fonctionnalités</a>
+    <a href="#how-it-works" onclick="closeMobileMenu()">Comment ça marche</a>
+    <a href="#pricing" onclick="closeMobileMenu()">Tarifs</a>
+    <a href="#faq" onclick="closeMobileMenu()">FAQ</a>
+  </nav>
+  <div style="margin-top:2rem;display:flex;flex-direction:column;gap:0.75rem;">
+    <a href="auth.html" class="btn btn-outline w-full">Connexion</a>
+    <a href="auth.html?tab=register" class="btn btn-primary w-full">Commencer gratuitement</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero-section" id="home">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content animate-fadeUp">
+        <div class="hero-badge">
+          <span>🏥</span>
+          <span>La plateforme #1 pour le Résidanat en Algérie</span>
+        </div>
+        <h1 class="hero-title">
+          Réussissez votre<br>
+          <span>Résidanat</span><br>
+          avec méthode
+        </h1>
+        <p class="hero-subtitle">
+          Banque de questions QCM, simulations d'examens chronométrés, flashcards à répétition espacée et analytics personnalisés — tout ce dont vous avez besoin pour exceller.
+        </p>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+          <a href="auth.html?tab=register" class="btn btn-cyan btn-xl">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Démarrer gratuitement
+          </a>
+          <a href="dashboard.html" class="btn btn-outline-white btn-xl">
+            Voir la démo →
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-val">8 500+</div>
+            <div class="hero-stat-lbl">Questions QCM</div>
+          </div>
+          <div>
+            <div class="hero-stat-val">12 000+</div>
+            <div class="hero-stat-lbl">Étudiants actifs</div>
+          </div>
+          <div>
+            <div class="hero-stat-val">94%</div>
+            <div class="hero-stat-lbl">Taux de réussite</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero visual mockup -->
+      <div class="hero-visual animate-fadeUp delay-200">
+        <div class="hero-mockup">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+            <div>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.6);margin-bottom:2px;">Bonjour, Dr. Amira 👋</div>
+              <div style="font-size:1rem;font-weight:700;color:white;">Tableau de bord</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.15);border-radius:50%;width:2.25rem;height:2.25rem;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:white;">A</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+            <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:0.875rem;">
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.6);">Score global</div>
+              <div style="font-size:1.5rem;font-weight:800;color:white;line-height:1.2;">72%</div>
+              <div style="font-size:0.7rem;color:#34d399;">↑ +4% ce mois</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:0.875rem;">
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.6);">Questions</div>
+              <div style="font-size:1.5rem;font-weight:800;color:white;line-height:1.2;">1 240</div>
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">répondues</div>
+            </div>
+          </div>
+          <div style="margin-bottom:0.75rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.35rem;"><span style="font-size:0.75rem;color:rgba(255,255,255,0.7);">Cardiologie</span><span style="font-size:0.75rem;color:white;font-weight:600;">81%</span></div>
+            <div style="height:6px;background:rgba(255,255,255,0.15);border-radius:9999px;"><div style="height:100%;width:81%;background:linear-gradient(90deg,#22d3ee,#34d399);border-radius:9999px;"></div></div>
+          </div>
+          <div style="margin-bottom:0.75rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.35rem;"><span style="font-size:0.75rem;color:rgba(255,255,255,0.7);">Neurologie</span><span style="font-size:0.75rem;color:white;font-weight:600;">65%</span></div>
+            <div style="height:6px;background:rgba(255,255,255,0.15);border-radius:9999px;"><div style="height:100%;width:65%;background:linear-gradient(90deg,#818cf8,#c084fc);border-radius:9999px;"></div></div>
+          </div>
+          <div style="margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.35rem;"><span style="font-size:0.75rem;color:rgba(255,255,255,0.7);">Pédiatrie</span><span style="font-size:0.75rem;color:white;font-weight:600;">58%</span></div>
+            <div style="height:6px;background:rgba(255,255,255,0.15);border-radius:9999px;"><div style="height:100%;width:58%;background:linear-gradient(90deg,#fb923c,#f59e0b);border-radius:9999px;"></div></div>
+          </div>
+          <div style="padding:0.875rem;background:rgba(255,255,255,0.08);border-radius:12px;text-align:center;">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.6);margin-bottom:0.5rem;">⏳ Résidanat dans</div>
+            <div style="display:flex;justify-content:center;gap:0.75rem;">
+              <div style="text-align:center;"><div style="font-size:1.25rem;font-weight:800;color:white;" id="heroCountdown">68</div><div style="font-size:0.625rem;color:rgba(255,255,255,0.5);">JOURS</div></div>
+              <div style="color:rgba(255,255,255,0.3);font-size:1.25rem;line-height:1.6;">:</div>
+              <div style="text-align:center;"><div style="font-size:1.25rem;font-weight:800;color:white;">14</div><div style="font-size:0.625rem;color:rgba(255,255,255,0.5);">HEURES</div></div>
+              <div style="color:rgba(255,255,255,0.3);font-size:1.25rem;line-height:1.6;">:</div>
+              <div style="text-align:center;"><div style="font-size:1.25rem;font-weight:800;color:white;" id="heroMin">32</div><div style="font-size:0.625rem;color:rgba(255,255,255,0.5);">MIN</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Wave -->
+<div style="line-height:0;background:linear-gradient(135deg,#0c1f3f,#0891b2);">
+  <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="display:block;width:100%;">
+    <path d="M0,60 L0,30 Q360,0 720,30 Q1080,60 1440,20 L1440,60 Z" fill="#f8fafc"/>
+  </svg>
+</div>
+
+<!-- TRUST BAR -->
+<section style="padding:2rem 0;background:var(--gray-50);">
+  <div class="container">
+    <p style="text-align:center;color:var(--gray-400);font-weight:600;font-size:0.8125rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;">Utilisé par des étudiants des meilleures facultés</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap;opacity:0.45;">
+      <span style="font-size:0.9375rem;font-weight:700;color:var(--gray-600);">Faculté d'Alger</span>
+      <span style="font-size:0.9375rem;font-weight:700;color:var(--gray-600);">Faculté d'Oran</span>
+      <span style="font-size:0.9375rem;font-weight:700;color:var(--gray-600);">Faculté de Constantine</span>
+      <span style="font-size:0.9375rem;font-weight:700;color:var(--gray-600);">Faculté d'Annaba</span>
+      <span style="font-size:0.9375rem;font-weight:700;color:var(--gray-600);">Faculté de Tizi-Ouzou</span>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section section-alt" id="features">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Fonctionnalités</p>
+      <h2 class="section-title">Tout ce qu'il vous faut pour réussir</h2>
+      <p class="section-subtitle">Une plateforme complète conçue spécifiquement pour la préparation au Résidanat algérien.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.5rem;">
+      <div class="feature-card animate-fadeUp"><div class="feature-icon" style="background:var(--primary-100);">📚</div><h4>Banque de Questions</h4><p>Plus de 8 500 QCM et cas cliniques classés par spécialité, difficulté et année. Filtrages avancés et favoris.</p></div>
+      <div class="feature-card animate-fadeUp delay-100"><div class="feature-icon" style="background:var(--cyan-100);">⏱️</div><h4>Examens Simulés</h4><p>Simulations en conditions réelles avec chronomètre, mode examen et correction détaillée avec explications.</p></div>
+      <div class="feature-card animate-fadeUp delay-200"><div class="feature-icon" style="background:var(--green-100);">🃏</div><h4>Flashcards Intelligentes</h4><p>Système de répétition espacée (SRS) pour mémoriser durablement les notions clés, médicaments et critères diagnostiques.</p></div>
+      <div class="feature-card animate-fadeUp"><div class="feature-icon" style="background:var(--amber-100);">📅</div><h4>Planning Personnalisé</h4><p>Calendrier de révision adapté à votre emploi du temps, vos objectifs et votre date d'examen.</p></div>
+      <div class="feature-card animate-fadeUp delay-100"><div class="feature-icon" style="background:var(--purple-100);">📊</div><h4>Analytics Avancés</h4><p>Graphiques de progression, détection des points faibles par spécialité et recommandations personnalisées.</p></div>
+      <div class="feature-card animate-fadeUp delay-200"><div class="feature-icon" style="background:var(--red-100);">📄</div><h4>Ressources Médicales</h4><p>Résumés de cours, protocoles, guidelines officiels, PDFs téléchargeables et vidéos pédagogiques.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how-it-works" style="background:var(--gray-50);">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Méthode</p>
+      <h2 class="section-title">Commencez en 3 étapes</h2>
+      <p class="section-subtitle">Simple, rapide et efficace — votre préparation optimisée dès le premier jour.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;" class="steps-grid">
+      <div style="text-align:center;" class="animate-fadeUp">
+        <div style="width:5rem;height:5rem;background:linear-gradient(135deg,var(--primary-600),var(--primary-400));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:900;color:white;margin:0 auto 1.5rem;box-shadow:0 8px 24px rgba(30,74,138,0.3);">1</div>
+        <h4 style="margin-bottom:0.75rem;color:var(--gray-900);">Créez votre profil</h4>
+        <p style="color:var(--gray-500);line-height:1.7;">Inscrivez-vous en 30 secondes. Indiquez votre spécialité cible et votre date d'examen.</p>
+      </div>
+      <div style="text-align:center;" class="animate-fadeUp delay-100">
+        <div style="width:5rem;height:5rem;background:linear-gradient(135deg,var(--cyan-600),var(--cyan-400));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:900;color:white;margin:0 auto 1.5rem;box-shadow:0 8px 24px rgba(8,145,178,0.3);">2</div>
+        <h4 style="margin-bottom:0.75rem;color:var(--gray-900);">Révisez intelligemment</h4>
+        <p style="color:var(--gray-500);line-height:1.7;">Utilisez la banque de questions, les flashcards et les cours selon votre planning automatique.</p>
+      </div>
+      <div style="text-align:center;" class="animate-fadeUp delay-200">
+        <div style="width:5rem;height:5rem;background:linear-gradient(135deg,var(--green-600),var(--green-400));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:900;color:white;margin:0 auto 1.5rem;box-shadow:0 8px 24px rgba(5,150,105,0.3);">3</div>
+        <h4 style="margin-bottom:0.75rem;color:var(--gray-900);">Suivez vos progrès</h4>
+        <p style="color:var(--gray-500);line-height:1.7;">Analysez vos performances et concentrez vos efforts sur vos points faibles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECIALTIES -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Spécialités</p>
+      <h2 class="section-title">Toutes les spécialités couvertes</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;">
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">❤️</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Cardiologie</div><div style="font-size:0.8125rem;color:var(--gray-500);">1 240 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">🧠</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Neurologie</div><div style="font-size:0.8125rem;color:var(--gray-500);">980 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">👶</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Pédiatrie</div><div style="font-size:0.8125rem;color:var(--gray-500);">870 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">🤰</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Gynécologie</div><div style="font-size:0.8125rem;color:var(--gray-500);">760 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">🔬</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Chirurgie</div><div style="font-size:0.8125rem;color:var(--gray-500);">1 050 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">🩺</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Médecine Interne</div><div style="font-size:0.8125rem;color:var(--gray-500);">920 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">🦠</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Maladies Infectieuses</div><div style="font-size:0.8125rem;color:var(--gray-500);">680 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">💊</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Pharmacologie</div><div style="font-size:0.8125rem;color:var(--gray-500);">590 questions</div></div></div>
+      <div style="background:var(--white);border:1.5px solid var(--gray-200);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s;cursor:pointer;" class="spec-item-card" onclick="window.location='auth.html?tab=register'"><span style="font-size:1.625rem;">🚑</span><div><div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">Urgences</div><div style="font-size:0.8125rem;color:var(--gray-500);">740 questions</div></div></div>
+    </div>
+    <div style="text-align:center;margin-top:2rem;">
+      <a href="auth.html?tab=register" class="btn btn-outline btn-lg">Voir toutes les spécialités →</a>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section" style="background:var(--gray-50);">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Témoignages</p>
+      <h2 class="section-title">Ils ont réussi leur Résidanat</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem;">
+      <div class="testimonial-card animate-fadeUp">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"RésidanatPro a transformé ma façon de réviser. Les analytics m'ont aidé à identifier mes faiblesses en neurologie. J'ai obtenu Cardiologie en première intention !"</p>
+        <div class="testimonial-author">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--primary-600),var(--cyan-500));color:white;">SA</div>
+          <div><div class="name">Dr. Sarah Amrani</div><div class="role">Résidante en Cardiologie · Alger</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card animate-fadeUp delay-100">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"Les simulations d'examens sont exactement dans le format du vrai concours. Après 3 mois d'utilisation, j'étais parfaitement prêt. La banque de questions est exceptionnelle."</p>
+        <div class="testimonial-author">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--green-600),var(--cyan-500));color:white;">MB</div>
+          <div><div class="name">Dr. Mohamed Belkacem</div><div class="role">Résident en Chirurgie · Oran</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card animate-fadeUp delay-200">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"Les flashcards avec répétition espacée sont incroyables ! En 2 mois, ma mémoire a été révolutionnée. Je recommande à 100% à tous les étudiants en médecine."</p>
+        <div class="testimonial-author">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--purple-600),var(--primary-500));color:white;">LB</div>
+          <div><div class="name">Dr. Lina Bouazza</div><div class="role">Résidante en Pédiatrie · Constantine</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section section-alt" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Tarifs</p>
+      <h2 class="section-title">Investissez dans votre avenir</h2>
+      <p class="section-subtitle">Des formules adaptées à chaque étudiant. Commencez gratuitement, upgradez quand vous voulez.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;max-width:960px;margin:0 auto;" class="pricing-grid">
+      <div class="pricing-card">
+        <h4 style="margin-bottom:0.5rem;color:var(--gray-800);">Gratuit</h4>
+        <p style="color:var(--gray-500);font-size:0.875rem;margin-bottom:1.5rem;">Pour démarrer</p>
+        <div class="pricing-price" style="margin-bottom:1.5rem;">0<span> DZD/mois</span></div>
+        <div style="margin-bottom:2rem;border-top:1px solid var(--gray-100);padding-top:1.5rem;">
+          <div class="pricing-feature"><span class="check">✓</span> 50 questions/mois</div>
+          <div class="pricing-feature"><span class="check">✓</span> 1 simulation/mois</div>
+          <div class="pricing-feature"><span class="check">✓</span> Flashcards de base</div>
+          <div class="pricing-feature"><span class="cross">✗</span> <span style="color:var(--gray-400);">Analytics avancés</span></div>
+          <div class="pricing-feature"><span class="cross">✗</span> <span style="color:var(--gray-400);">Planning personnalisé</span></div>
+        </div>
+        <a href="auth.html?tab=register" class="btn btn-outline w-full">Commencer gratuitement</a>
+      </div>
+      <div class="pricing-card featured" style="transform:scale(1.02);">
+        <div class="popular-badge">⭐ Le plus populaire</div>
+        <h4 style="margin-bottom:0.5rem;color:var(--primary-700);">Pro</h4>
+        <p style="color:var(--gray-500);font-size:0.875rem;margin-bottom:1.5rem;">Pour une préparation sérieuse</p>
+        <div class="pricing-price" style="color:var(--primary-700);margin-bottom:0.5rem;"><sup style="font-size:1.25rem;vertical-align:super;">DA</sup>1 500<span>/mois</span></div>
+        <p style="color:var(--gray-400);font-size:0.8125rem;margin-bottom:1.5rem;">ou 12 000 DA/an <span style="color:var(--green-600);font-weight:600;">(–33%)</span></p>
+        <div style="margin-bottom:2rem;border-top:1px solid var(--gray-100);padding-top:1.5rem;">
+          <div class="pricing-feature"><span class="check">✓</span> Questions illimitées</div>
+          <div class="pricing-feature"><span class="check">✓</span> Simulations illimitées</div>
+          <div class="pricing-feature"><span class="check">✓</span> Flashcards complètes</div>
+          <div class="pricing-feature"><span class="check">✓</span> Analytics avancés</div>
+          <div class="pricing-feature"><span class="check">✓</span> Planning personnalisé</div>
+          <div class="pricing-feature"><span class="check">✓</span> Ressources PDF</div>
+        </div>
+        <a href="auth.html?tab=register" class="btn btn-primary w-full btn-lg">Choisir Pro</a>
+      </div>
+      <div class="pricing-card">
+        <h4 style="margin-bottom:0.5rem;color:var(--gray-800);">Elite</h4>
+        <p style="color:var(--gray-500);font-size:0.875rem;margin-bottom:1.5rem;">Pour maximiser vos chances</p>
+        <div class="pricing-price" style="margin-bottom:0.5rem;"><sup style="font-size:1.25rem;vertical-align:super;">DA</sup>2 500<span>/mois</span></div>
+        <p style="color:var(--gray-400);font-size:0.8125rem;margin-bottom:1.5rem;">ou 20 000 DA/an</p>
+        <div style="margin-bottom:2rem;border-top:1px solid var(--gray-100);padding-top:1.5rem;">
+          <div class="pricing-feature"><span class="check">✓</span> Tout du plan Pro</div>
+          <div class="pricing-feature"><span class="check">✓</span> Vidéos exclusives</div>
+          <div class="pricing-feature"><span class="check">✓</span> Cas cliniques détaillés</div>
+          <div class="pricing-feature"><span class="check">✓</span> Mentoring en groupe</div>
+          <div class="pricing-feature"><span class="check">✓</span> Support prioritaire</div>
+        </div>
+        <a href="auth.html?tab=register" class="btn btn-outline w-full">Choisir Elite</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" style="background:var(--gray-50);" id="faq">
+  <div class="container container-sm">
+    <div class="section-header">
+      <p class="section-eyebrow">FAQ</p>
+      <h2 class="section-title">Questions fréquentes</h2>
+    </div>
+    <div class="card" style="padding:0.5rem 2rem;">
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">La plateforme est-elle adaptée au Résidanat algérien ?<span class="faq-icon">+</span></div>
+        <div class="faq-answer">Oui ! RésidanatPro est conçu spécifiquement pour le programme du Résidanat algérien. Toutes les questions correspondent aux enseignements des facultés algériennes et au programme officiel du concours.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">Puis-je utiliser la plateforme sur mobile ?<span class="faq-icon">+</span></div>
+        <div class="faq-answer">Oui ! RésidanatPro est entièrement responsive et fonctionne parfaitement sur smartphones et tablettes. Révisez où que vous soyez — dans les transports, pendant vos pauses, ou chez vous.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">Comment fonctionne le système de flashcards ?<span class="faq-icon">+</span></div>
+        <div class="faq-answer">Notre système utilise l'algorithme de répétition espacée (SRS). Chaque flashcard est présentée à intervalles optimaux selon votre niveau de maîtrise, maximisant la rétention à long terme.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">Les questions sont-elles régulièrement mises à jour ?<span class="faq-icon">+</span></div>
+        <div class="faq-answer">Oui, notre équipe médicale ajoute de nouvelles questions chaque semaine et intègre les annales des sessions précédentes dès leur publication.</div>
+      </div>
+      <div class="faq-item" style="border-bottom:none;">
+        <div class="faq-question" onclick="toggleFaq(this)">Y a-t-il un essai gratuit ?<span class="faq-icon">+</span></div>
+        <div class="faq-answer">Oui ! Le plan gratuit vous donne accès à 50 questions par mois, une simulation complète et les flashcards de base — suffisant pour évaluer la qualité avant de vous abonner.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-gradient section" style="text-align:center;">
+  <div class="container container-sm">
+    <p style="font-size:0.875rem;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;">Rejoignez 12 000+ étudiants</p>
+    <h2 style="font-size:clamp(1.75rem,4vw,2.5rem);color:white;font-weight:900;letter-spacing:-0.025em;margin-bottom:1.25rem;line-height:1.2;">Commencez votre préparation<br>dès aujourd'hui</h2>
+    <p style="color:rgba(255,255,255,0.7);font-size:1.125rem;max-width:500px;margin:0 auto 2.5rem;line-height:1.7;">Chaque jour compte. Plus vous commencez tôt, plus vous serez confiant le jour J.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="auth.html?tab=register" class="btn btn-xl" style="background:white;color:var(--primary-700);font-weight:700;">🚀 Démarrer gratuitement</a>
+      <a href="dashboard.html" class="btn btn-outline-white btn-xl">Voir la démo →</a>
+    </div>
+    <p style="color:rgba(255,255,255,0.45);font-size:0.875rem;margin-top:1.5rem;">✓ Aucune carte bancaire requise &nbsp;·&nbsp; ✓ Annulation à tout moment</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem;" class="footer-grid">
+      <div>
+        <div class="footer-brand">🏥 RésidanatPro</div>
+        <p class="footer-desc">La plateforme de référence pour la préparation au Résidanat. Conçue par des médecins, pour les futurs médecins.</p>
+      </div>
+      <div>
+        <p class="footer-heading">Plateforme</p>
+        <a href="dashboard.html" class="footer-link">Tableau de bord</a>
+        <a href="questions.html" class="footer-link">Banque de questions</a>
+        <a href="exam.html" class="footer-link">Examens simulés</a>
+        <a href="flashcards.html" class="footer-link">Flashcards</a>
+        <a href="analytics.html" class="footer-link">Analytics</a>
+      </div>
+      <div>
+        <p class="footer-heading">Ressources</p>
+        <a href="resources.html" class="footer-link">Cours & Résumés</a>
+        <a href="resources.html" class="footer-link">Protocoles</a>
+        <a href="resources.html" class="footer-link">Guidelines</a>
+        <a href="resources.html" class="footer-link">PDFs</a>
+      </div>
+      <div>
+        <p class="footer-heading">Légal</p>
+        <a href="#" class="footer-link">Mentions légales</a>
+        <a href="#" class="footer-link">Confidentialité</a>
+        <a href="#" class="footer-link">CGU</a>
+        <a href="#" class="footer-link">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 RésidanatPro. Tous droits réservés.</span>
+      <span>Fait avec ❤️ pour les étudiants en médecine algériens</span>
+    </div>
+  </div>
+</footer>
+
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+// Navbar scroll
+const nav = document.getElementById('landingNav');
+const loginBtn = document.getElementById('navLoginBtn');
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY > 60;
+  nav.classList.toggle('scrolled', scrolled);
+  nav.classList.toggle('transparent', !scrolled);
+  if (scrolled) { loginBtn.classList.replace('btn-outline-white','btn-outline'); }
+  else { loginBtn.classList.replace('btn-outline','btn-outline-white'); }
+  document.getElementById('scrollTop').classList.toggle('visible', scrolled);
+});
+
+// Mobile menu
+document.getElementById('menuToggle').addEventListener('click', () => document.getElementById('mobileMenu').classList.add('open'));
+document.getElementById('menuClose').addEventListener('click', closeMobileMenu);
+function closeMobileMenu() { document.getElementById('mobileMenu').classList.remove('open'); }
+function checkMobile() {
+  document.getElementById('menuToggle').style.display = window.innerWidth < 1024 ? 'flex' : 'none';
+}
+checkMobile(); window.addEventListener('resize', checkMobile);
+
+// FAQ
+function toggleFaq(el) { el.parentElement.classList.toggle('open'); }
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth',block:'start'}); }
+  });
+});
+
+// Animations on scroll
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; } });
+}, {threshold: 0.08});
+document.querySelectorAll('.animate-fadeUp').forEach(el => {
+  el.style.opacity='0'; el.style.transform='translateY(28px)'; el.style.transition='opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
+
+// Specialty card hover
+document.querySelectorAll('.spec-item-card').forEach(card => {
+  card.addEventListener('mouseenter', () => { card.style.boxShadow='0 4px 16px rgba(30,74,138,0.12)'; card.style.borderColor='var(--primary-300)'; });
+  card.addEventListener('mouseleave', () => { card.style.boxShadow=''; card.style.borderColor='var(--gray-200)'; });
+});
+</script>
 </body>
-
 </html>
