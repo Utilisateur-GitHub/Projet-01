@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examen Simulé — RésidanatPro</title>
+  <link rel="stylesheet" href="resources/css/main.css">
+  <style>
+    .app-layout { padding-top: var(--navbar-height); }
+    .app-main { margin-left: var(--sidebar-width); padding: 2rem; }
+    @media(max-width:1024px) { .app-main { margin-left:0; } }
+    @media(max-width:768px) { .app-main { padding:1rem; } }
+    .exam-mode .app-main { padding:0; margin-left:0; }
+    .exam-mode .navbar, .exam-mode .sidebar { display:none; }
+    .exam-mode body { padding-top:0 !important; }
+    #examInterface { min-height:100vh; background:var(--gray-50); }
+    .option-exam { display:flex; align-items:flex-start; gap:1rem; padding:1rem 1.25rem; border:2px solid var(--gray-200); border-radius:var(--radius-lg); cursor:pointer; transition:var(--transition); margin-bottom:0.625rem; }
+    .option-exam:hover { border-color:var(--primary-400); background:var(--primary-50); }
+    .option-exam.selected { border-color:var(--primary-600); background:var(--primary-50); }
+    .option-exam.correct { border-color:var(--green-500); background:var(--green-50); }
+    .option-exam.incorrect { border-color:var(--red-500); background:var(--red-50); }
+    .q-nav-btn { width:2.25rem; height:2.25rem; border-radius:var(--radius-md); border:1.5px solid var(--gray-300); background:white; font-size:0.8125rem; font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; justify-content:center; }
+    .q-nav-btn:hover { border-color:var(--primary-400); background:var(--primary-50); }
+    .q-nav-btn.answered { background:var(--primary-600); color:white; border-color:var(--primary-600); }
+    .q-nav-btn.correct  { background:var(--green-600); color:white; border-color:var(--green-600); }
+    .q-nav-btn.incorrect { background:var(--red-500); color:white; border-color:var(--red-500); }
+    .q-nav-btn.current  { border-color:var(--primary-600); border-width:2px; }
+    .score-circle { width:160px; height:160px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  </style>
+</head>
+<body class="app-layout">
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Setup panel -->
+<div class="app-main" id="setupPanel">
+  <div class="page-header">
+    <h1>⏱️ Examens Simulés</h1>
+    <p>Préparez-vous dans les conditions réelles du Résidanat</p>
+  </div>
+
+  <!-- Recent exams -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:2rem;" id="examMainGrid">
+    <div>
+      <h4 style="margin-bottom:1.25rem;color:var(--gray-900);">Configurer un nouvel examen</h4>
+      <div class="card">
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+            <div class="form-group">
+              <label class="form-label">Spécialité</label>
+              <select class="form-control form-select" id="examSpecialty">
+                <option value="mixed">Mixte (toutes spécialités)</option>
+                <option value="Cardiologie">Cardiologie</option>
+                <option value="Neurologie">Neurologie</option>
+                <option value="Pédiatrie">Pédiatrie</option>
+                <option value="Gynécologie">Gynécologie</option>
+                <option value="Chirurgie">Chirurgie</option>
+                <option value="Médecine Interne">Médecine Interne</option>
+                <option value="Maladies Infectieuses">Maladies Infectieuses</option>
+                <option value="Pharmacologie">Pharmacologie</option>
+                <option value="Urgences">Urgences</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre de questions</label>
+              <select class="form-control form-select" id="examCount">
+                <option value="10">10 questions (rapide)</option>
+                <option value="20" selected>20 questions</option>
+                <option value="40">40 questions</option>
+                <option value="60">60 questions (examen complet)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Durée</label>
+              <select class="form-control form-select" id="examDuration">
+                <option value="15">15 minutes</option>
+                <option value="30" selected>30 minutes</option>
+                <option value="60">60 minutes</option>
+                <option value="90">90 minutes</option>
+                <option value="0">Sans limite</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mode</label>
+              <select class="form-control form-select" id="examMode">
+                <option value="practice">Entraînement (correction immédiate)</option>
+                <option value="exam">Mode Examen (correction à la fin)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:0.5rem;">
+            <label class="form-label">Difficulté</label>
+            <div style="display:flex;gap:0.75rem;">
+              <label class="form-check"><input type="radio" name="diff" value="all" checked> <span>Toutes</span></label>
+              <label class="form-check"><input type="radio" name="diff" value="easy"> <span style="color:var(--green-600);">Facile</span></label>
+              <label class="form-check"><input type="radio" name="diff" value="medium"> <span style="color:var(--amber-600);">Moyen</span></label>
+              <label class="form-check"><input type="radio" name="diff" value="hard"> <span style="color:var(--red-600);">Difficile</span></label>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-lg w-full" onclick="startExam()" style="margin-top:0.5rem;">
+            🚀 Démarrer l'examen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side panel: history + tips -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+      <div class="card">
+        <div class="card-header"><h5 style="font-weight:700;">📈 Historique</h5></div>
+        <div class="card-body" style="padding:0.5rem 0;" id="examHistory">
+          <!-- filled by JS -->
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,var(--primary-700),var(--cyan-600));border:none;">
+        <div class="card-body">
+          <h5 style="color:white;margin-bottom:0.75rem;">💡 Conseils</h5>
+          <ul style="color:rgba(255,255,255,0.85);font-size:0.875rem;line-height:1.8;padding-left:1.25rem;">
+            <li>Lisez chaque question attentivement</li>
+            <li>Éliminez les mauvaises réponses</li>
+            <li>Ne pas changer sa première réponse</li>
+            <li>Gérez votre temps : ~1 min/question</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Exam Interface (hidden initially) -->
+<div id="examInterface" style="display:none;">
+  <!-- Progress bar at top -->
+  <div class="exam-progress-top"><div class="bar" id="examProgressBar" style="width:0%;"></div></div>
+
+  <!-- Exam header -->
+  <div style="background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="navbar-brand" style="font-size:1.125rem;">
+        <div class="logo-icon" style="width:1.75rem;height:1.75rem;font-size:0.9rem;">R</div>
+        <span>Examen Simulé</span>
+      </div>
+      <span class="badge badge-primary" id="examSpecBadge">Mixte</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:1.25rem;">
+      <div class="timer-display" id="timerDisplay">30:00</div>
+      <button class="btn btn-danger btn-sm" onclick="confirmEndExam()">Terminer l'examen</button>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:0.875rem;color:var(--gray-500);">Question <strong id="qCurrentNum">1</strong> / <strong id="qTotalNum">20</strong></div>
+      <div style="font-size:0.8125rem;color:var(--gray-400);" id="answeredCount">0 répondues</div>
+    </div>
+  </div>
+
+  <!-- Main exam body -->
+  <div style="display:grid;grid-template-columns:1fr 280px;max-width:1280px;margin:0 auto;padding:2rem 1.5rem;gap:1.5rem;" id="examBody">
+
+    <!-- Question panel -->
+    <div>
+      <div class="question-card">
+        <div class="question-header">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+            <span style="font-size:0.875rem;opacity:0.85;" id="examQSpecialty">Cardiologie</span>
+            <span style="font-size:0.875rem;font-weight:700;" id="examQDiff">Moyen</span>
+          </div>
+          <p id="examQText" style="font-size:1.0625rem;margin-top:0.75rem;line-height:1.6;"></p>
+        </div>
+        <div class="question-body" id="examOptions"></div>
+      </div>
+
+      <!-- Navigation -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;">
+        <button class="btn btn-ghost" id="prevBtn" onclick="goToQuestion(currentQ - 1)">← Précédent</button>
+        <button class="btn btn-primary" id="nextBtn" onclick="goToQuestion(currentQ + 1)">Suivant →</button>
+      </div>
+
+      <!-- Explanation (practice mode) -->
+      <div id="practiceExplanation" style="display:none;margin-top:1rem;"></div>
+    </div>
+
+    <!-- Sidebar: question navigator + info -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="card">
+        <div class="card-header" style="padding:0.875rem 1rem;"><h6 style="font-weight:700;">Navigation</h6></div>
+        <div class="card-body" style="padding:0.875rem;">
+          <div style="display:flex;flex-wrap:wrap;gap:0.375rem;" id="qNavigator"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="font-size:0.8125rem;color:var(--gray-600);">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;"><div style="width:12px;height:12px;border-radius:2px;background:var(--primary-600);"></div> Répondue</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;"><div style="width:12px;height:12px;border-radius:2px;background:var(--gray-200);border:1px solid var(--gray-300);"></div> Non répondue</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;"><div style="width:12px;height:12px;border-radius:2px;border:2px solid var(--primary-600);"></div> En cours</div>
+        </div>
+      </div>
+      <button class="btn btn-green btn-sm" onclick="confirmEndExam()">✅ Soumettre l'examen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Result Panel -->
+<div id="resultPanel" style="display:none;padding:3rem 2rem;max-width:960px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:2.5rem;">
+    <h2 style="font-size:2rem;font-weight:900;color:var(--gray-900);margin-bottom:0.5rem;">Résultats de l'examen</h2>
+    <p style="color:var(--gray-500);" id="resultSubtitle"></p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:auto 1fr;gap:3rem;align-items:center;margin-bottom:2.5rem;" id="resultMainGrid">
+    <div style="text-align:center;">
+      <div id="scoreRing"></div>
+    </div>
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" id="resultStats"></div>
+    </div>
+  </div>
+
+  <div id="resultBySpec" style="margin-bottom:2rem;"></div>
+
+  <!-- Correction -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="font-weight:700;">Correction détaillée</h5>
+      <button class="btn btn-ghost btn-sm" id="toggleCorrection" onclick="toggleCorrectionView()">Afficher</button>
+    </div>
+    <div class="card-body" id="correctionList" style="display:none;"></div>
+  </div>
+
+  <div style="display:flex;gap:1rem;justify-content:center;margin-top:2rem;">
+    <button class="btn btn-outline" onclick="resetExam()">↺ Refaire l'examen</button>
+    <a href="questions.html" class="btn btn-ghost">📚 Banque de questions</a>
+    <a href="analytics.html" class="btn btn-primary">📊 Voir mes analytics</a>
+  </div>
+</div>
+
+<script src="resources/js/app.js"></script>
+<script src="resources/js/layout.js"></script>
+<script src="resources/js/questions_data.js"></script>
+<script>
+if (!Auth.isLogged()) {
+  localStorage.setItem('rp_user', JSON.stringify({id:'1',firstName:'Ahmed',lastName:'Benali',email:'demo@residanatpro.dz',specialty:'Cardiologie',university:"Faculté d'Alger",examDate:'2026-07-08',plan:'pro',avatar:'AB'}));
+  localStorage.setItem('rp_logged','1');
+}
+renderLayout();
+
+// Load history
+const recentExams = Store.get('recent_exams', []);
+const histEl = document.getElementById('examHistory');
+histEl.innerHTML = recentExams.map(e => `
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid var(--gray-100);">
+    <div>
+      <div style="font-weight:600;font-size:0.875rem;color:var(--gray-800);">${e.specialty}</div>
+      <div style="font-size:0.75rem;color:var(--gray-400);">${e.date} · ${e.total}Q · ${e.duration}min</div>
+    </div>
+    <span style="font-weight:700;font-size:0.9375rem;color:${e.score >= 75 ? 'var(--green-600)' : e.score >= 60 ? 'var(--amber-600)' : 'var(--red-600)'};">${e.score}%</span>
+  </div>
+`).join('');
+
+// Responsive
+function adjustExamGrid() {
+  const g = document.getElementById('examMainGrid');
+  if (g) g.style.gridTemplateColumns = window.innerWidth < 768 ? '1fr' : '2fr 1fr';
+  const eb = document.getElementById('examBody');
+  if (eb) eb.style.gridTemplateColumns = window.innerWidth < 1024 ? '1fr' : '1fr 280px';
+  const rg = document.getElementById('resultMainGrid');
+  if (rg) rg.style.gridTemplateColumns = window.innerWidth < 640 ? '1fr' : 'auto 1fr';
+}
+adjustExamGrid(); window.addEventListener('resize', adjustExamGrid);
+
+// Exam state
+let examQuestions = [];
+let answers = {}; // {qIndex: optionIndex}
+let currentQ = 0;
+let timerInterval = null;
+let timeLeft = 0;
+let examModeType = 'practice';
+
+function startExam() {
+  const spec = document.getElementById('examSpecialty').value;
+  const count = parseInt(document.getElementById('examCount').value);
+  const duration = parseInt(document.getElementById('examDuration').value);
+  const mode = document.getElementById('examMode').value;
+  const diff = document.querySelector('input[name="diff"]:checked').value;
+  examModeType = mode;
+
+  // Filter and shuffle questions
+  let pool = window.QUESTIONS_DB || [];
+  if (spec !== 'mixed') pool = pool.filter(q => q.specialty === spec);
+  if (diff !== 'all') pool = pool.filter(q => q.difficulty === diff);
+  pool = pool.sort(() => Math.random() - 0.5).slice(0, count);
+
+  if (pool.length === 0) {
+    showToast('Pas assez de questions pour ce filtre', 'error');
+    return;
+  }
+
+  examQuestions = pool;
+  answers = {};
+  currentQ = 0;
+  timeLeft = duration * 60;
+
+  document.getElementById('setupPanel').style.display = 'none';
+  document.getElementById('examInterface').style.display = 'block';
+  document.getElementById('examSpecBadge').textContent = spec === 'mixed' ? 'Mixte' : spec;
+  document.getElementById('qTotalNum').textContent = examQuestions.length;
+  document.body.classList.add('exam-mode');
+
+  renderNavButtons();
+  renderCurrentQuestion();
+
+  if (duration > 0) {
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay();
+      if (timeLeft <= 0) { clearInterval(timerInterval); endExam(); }
+    }, 1000);
+  } else {
+    document.getElementById('timerDisplay').textContent = '∞';
+  }
+}
+
+function updateTimerDisplay() {
+  const mins = Math.floor(timeLeft / 60);
+  const secs = timeLeft % 60;
+  const el = document.getElementById('timerDisplay');
+  el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  el.className = 'timer-display';
+  if (timeLeft < 300) el.className += ' warning';
+  if (timeLeft < 60)  el.className += ' danger';
+}
+
+function renderCurrentQuestion() {
+  const q = examQuestions[currentQ];
+  document.getElementById('qCurrentNum').textContent = currentQ + 1;
+  document.getElementById('examQSpecialty').textContent = q.specialty + ' · ' + q.topic;
+  document.getElementById('examQDiff').textContent = ({easy:'Facile',medium:'Moyen',hard:'Difficile'})[q.difficulty];
+  document.getElementById('examQText').textContent = q.text;
+  document.getElementById('examProgressBar').style.width = ((currentQ + 1) / examQuestions.length * 100) + '%';
+
+  const opts = document.getElementById('examOptions');
+  opts.innerHTML = '';
+
+  const isAnswered = answers[currentQ] !== undefined;
+  const showCorrection = examModeType === 'practice' && isAnswered;
+
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option-exam';
+    if (isAnswered && answers[currentQ] === i) div.classList.add('selected');
+    if (showCorrection && i === q.correct) div.classList.add('correct');
+    if (showCorrection && isAnswered && answers[currentQ] === i && i !== q.correct) div.classList.add('incorrect');
+
+    div.innerHTML = `<div class="option-letter" id="ol-${i}">${String.fromCharCode(65+i)}</div><span style="font-size:0.9375rem;">${opt}</span>`;
+
+    if (!isAnswered) {
+      div.onclick = () => selectExamOption(i);
+    } else {
+      div.style.cursor = 'default';
+    }
+    opts.appendChild(div);
+  });
+
+  // Show explanation in practice mode
+  const expEl = document.getElementById('practiceExplanation');
+  if (showCorrection) {
+    expEl.style.display = 'block';
+    expEl.innerHTML = `<div class="explanation-box"><h5>💡 Explication</h5><p>${q.explanation}</p></div>`;
+  } else {
+    expEl.style.display = 'none';
+  }
+
+  // Nav buttons
+  document.getElementById('prevBtn').disabled = currentQ === 0;
+  document.getElementById('nextBtn').textContent = currentQ === examQuestions.length - 1 ? '✅ Terminer' : 'Suivant →';
+  if (currentQ === examQuestions.length - 1) {
+    document.getElementById('nextBtn').onclick = confirmEndExam;
+  } else {
+    document.getElementById('nextBtn').onclick = () => goToQuestion(currentQ + 1);
+  }
+
+  // Update navigator highlight
+  document.querySelectorAll('.q-nav-btn').forEach((btn, i) => {
+    btn.classList.toggle('current', i === currentQ);
+  });
+
+  document.getElementById('answeredCount').textContent = Object.keys(answers).length + ' répondues';
+}
+
+function selectExamOption(optIdx) {
+  answers[currentQ] = optIdx;
+  renderCurrentQuestion();
+  renderNavButtons();
+
+  if (examModeType === 'practice') {
+    const isCorrect = optIdx === examQuestions[currentQ].correct;
+    showToast(isCorrect ? '✅ Bonne réponse !' : '❌ Mauvaise réponse', isCorrect ? 'success' : 'error', 2000);
+  }
+
+  // Auto-advance in exam mode
+  if (examModeType === 'exam' && currentQ < examQuestions.length - 1) {
+    setTimeout(() => goToQuestion(currentQ + 1), 300);
+  }
+}
+
+function goToQuestion(n) {
+  if (n < 0 || n >= examQuestions.length) return;
+  currentQ = n;
+  renderCurrentQuestion();
+}
+
+function renderNavButtons() {
+  const nav = document.getElementById('qNavigator');
+  nav.innerHTML = '';
+  examQuestions.forEach((_, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'q-nav-btn' + (i === currentQ ? ' current' : '') + (answers[i] !== undefined ? ' answered' : '');
+    btn.textContent = i + 1;
+    btn.onclick = () => goToQuestion(i);
+    nav.appendChild(btn);
+  });
+}
+
+function confirmEndExam() {
+  const unanswered = examQuestions.length - Object.keys(answers).length;
+  if (unanswered > 0) {
+    if (!confirm(`Vous avez ${unanswered} question(s) non répondue(s). Terminer quand même ?`)) return;
+  }
+  endExam();
+}
+
+function endExam() {
+  clearInterval(timerInterval);
+  document.getElementById('examInterface').style.display = 'none';
+  document.getElementById('resultPanel').style.display = 'block';
+  document.body.classList.remove('exam-mode');
+  document.body.style.paddingTop = 'var(--navbar-height)';
+
+  const correct = examQuestions.filter((q, i) => answers[i] === q.correct).length;
+  const total = examQuestions.length;
+  const score = Math.round((correct / total) * 100);
+  const scoreColor = score >= 75 ? '#059669' : score >= 60 ? '#d97706' : '#dc2626';
+
+  document.getElementById('resultSubtitle').textContent = `${examQuestions[0]?.specialty || 'Mixte'} · ${total} questions`;
+
+  // Score ring
+  document.getElementById('scoreRing').innerHTML = `
+    <div style="position:relative;width:180px;height:180px;">
+      ${createDonut(null, score, 100, scoreColor, 180, 18)}
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <span style="font-size:2.75rem;font-weight:900;color:var(--gray-900);line-height:1;">${score}%</span>
+        <span style="font-size:0.875rem;color:var(--gray-500);">Score</span>
+      </div>
+    </div>`;
+  animateDonuts();
+
+  // Stats
+  const elapsed = examQuestions.length > 0 ? Math.round(((parseInt(document.getElementById('examDuration')?.value || 30) * 60) - timeLeft) / 60) : 0;
+  document.getElementById('resultStats').innerHTML = `
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-content"><div class="stat-label">Correctes</div><div class="stat-value" style="font-size:1.5rem;">${correct}/${total}</div></div></div>
+    <div class="stat-card"><div class="stat-icon red">❌</div><div class="stat-content"><div class="stat-label">Incorrectes</div><div class="stat-value" style="font-size:1.5rem;">${total - correct}/${total}</div></div></div>
+    <div class="stat-card"><div class="stat-icon amber">⏱️</div><div class="stat-content"><div class="stat-label">Durée</div><div class="stat-value" style="font-size:1.5rem;">${elapsed}min</div></div></div>
+    <div class="stat-card"><div class="stat-icon ${score >= 75 ? 'green' : score >= 60 ? 'amber' : 'red'}">${score >= 75 ? '🏆' : score >= 60 ? '📈' : '💪'}</div><div class="stat-content"><div class="stat-label">Appréciation</div><div class="stat-value" style="font-size:1.125rem;">${score >= 75 ? 'Excellent' : score >= 60 ? 'Bien' : 'À améliorer'}</div></div></div>
+  `;
+
+  // Save to history
+  const newExam = { id: Date.now(), date: new Date().toISOString().split('T')[0], specialty: document.getElementById('examSpecialty')?.value === 'mixed' ? 'Mixte' : (document.getElementById('examSpecialty')?.value || 'Mixte'), score, total, duration: elapsed };
+  const history = Store.get('recent_exams', []);
+  history.unshift(newExam);
+  Store.set('recent_exams', history.slice(0, 10));
+
+  // Correction list (hidden by default)
+  const corrEl = document.getElementById('correctionList');
+  corrEl.innerHTML = examQuestions.map((q, i) => {
+    const ua = answers[i];
+    const isCorrect = ua === q.correct;
+    return `
+      <div style="margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--gray-100);">
+        <div style="display:flex;gap:0.75rem;margin-bottom:0.75rem;">
+          <span style="font-size:1.25rem;">${isCorrect ? '✅' : '❌'}</span>
+          <div>
+            <span class="badge badge-primary" style="margin-right:0.375rem;font-size:0.7rem;">${q.specialty}</span>
+            <p style="font-size:0.9375rem;color:var(--gray-800);line-height:1.5;">${q.text}</p>
+          </div>
+        </div>
+        ${ua !== undefined ? `<div style="font-size:0.875rem;margin-bottom:0.375rem;"><strong style="color:${isCorrect ? 'var(--green-600)' : 'var(--red-600)'};">Votre réponse :</strong> ${q.options[ua]}</div>` : '<div style="font-size:0.875rem;color:var(--gray-400);margin-bottom:0.375rem;">Non répondue</div>'}
+        ${!isCorrect ? `<div style="font-size:0.875rem;margin-bottom:0.75rem;"><strong style="color:var(--green-600);">Bonne réponse :</strong> ${q.options[q.correct]}</div>` : ''}
+        <div class="explanation-box"><h5 style="font-size:0.875rem;">💡 Explication</h5><p style="font-size:0.875rem;">${q.explanation}</p></div>
+      </div>`;
+  }).join('');
+
+  showToast(score >= 75 ? `🏆 Excellent ! ${score}% — Beau travail !` : score >= 60 ? `📈 Bon travail ! ${score}%` : `💪 ${score}% — Continuez à pratiquer !`, score >= 60 ? 'success' : 'warning', 5000);
+}
+
+function toggleCorrectionView() {
+  const cl = document.getElementById('correctionList');
+  const btn = document.getElementById('toggleCorrection');
+  const visible = cl.style.display !== 'none';
+  cl.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? 'Afficher' : 'Masquer';
+}
+
+function resetExam() {
+  document.getElementById('resultPanel').style.display = 'none';
+  document.getElementById('setupPanel').style.display = 'block';
+}
+</script>
+</body>
+</html>

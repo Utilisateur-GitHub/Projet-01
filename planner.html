@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planning — RésidanatPro</title>
+  <link rel="stylesheet" href="resources/css/main.css">
+  <style>
+    .app-layout { padding-top: var(--navbar-height); }
+    .app-main { margin-left: var(--sidebar-width); padding: 2rem; }
+    @media(max-width:1024px) { .app-main { margin-left:0; } }
+    @media(max-width:768px)  { .app-main { padding:1rem; } }
+    .session-item { display:flex; align-items:center; gap:1rem; padding:0.875rem 1rem; border-radius:var(--radius-lg); border:1.5px solid var(--gray-200); background:var(--white); margin-bottom:0.625rem; transition:var(--transition); cursor:pointer; }
+    .session-item:hover { border-color:var(--primary-300); box-shadow:var(--shadow-sm); }
+    .session-item.done { border-color:var(--green-300); background:var(--green-50); }
+    .session-item.today { border-color:var(--primary-600); border-width:2px; }
+  </style>
+</head>
+<body class="app-layout">
+<div class="toast-container" id="toastContainer"></div>
+<div class="app-main">
+
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h1>📅 Planning de révision</h1>
+      <p>Organisez votre révision jour par jour jusqu'au Résidanat</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('addSessionModal')">+ Ajouter une session</button>
+  </div>
+
+  <!-- Countdown banner -->
+  <div style="background:linear-gradient(135deg,var(--primary-800),var(--primary-600),var(--cyan-600));border-radius:var(--radius-2xl);padding:2rem;margin-bottom:2rem;text-align:center;color:white;">
+    <p style="font-size:0.9375rem;color:rgba(255,255,255,0.7);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Compte à rebours — Résidanat</p>
+    <div class="countdown-wrap" id="mainCountdown" style="justify-content:center;"></div>
+    <p style="color:rgba(255,255,255,0.6);font-size:0.875rem;margin-top:1rem;" id="examDateLabel">Examen le 08 Juillet 2026</p>
+  </div>
+
+  <!-- Main grid -->
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;" id="plannerGrid">
+    <!-- Left: calendar + sessions -->
+    <div>
+      <!-- Calendar -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <button class="btn btn-ghost btn-sm" onclick="prevMonth()">←</button>
+          <h5 style="font-weight:700;color:var(--gray-900);" id="calMonthTitle">Mai 2026</h5>
+          <button class="btn btn-ghost btn-sm" onclick="nextMonth()">→</button>
+        </div>
+        <div class="card-body">
+          <div class="calendar-grid" id="calGrid"></div>
+        </div>
+      </div>
+
+      <!-- Sessions for selected day -->
+      <div class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h5 style="font-weight:700;color:var(--gray-900);" id="selectedDayTitle">Aujourd'hui</h5>
+          <button class="btn btn-green btn-sm" onclick="openModal('addSessionModal')">+ Ajouter</button>
+        </div>
+        <div class="card-body" id="daySessionsList">
+          <div class="empty-state" style="padding:2rem;">
+            <div class="empty-icon">📅</div>
+            <p>Sélectionnez un jour pour voir les sessions</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: week view + goals + streak -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <!-- Today's progress -->
+      <div class="card">
+        <div class="card-header"><h5 style="font-weight:700;">🎯 Objectifs du jour</h5></div>
+        <div class="card-body">
+          <div style="margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.375rem;">
+              <span style="font-size:0.875rem;color:var(--gray-600);">Questions répondues</span>
+              <span style="font-weight:700;color:var(--primary-600);" id="todayQs">12 / 30</span>
+            </div>
+            <div class="progress"><div class="progress-bar" style="width:40%;"></div></div>
+          </div>
+          <div style="margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.375rem;">
+              <span style="font-size:0.875rem;color:var(--gray-600);">Flashcards révisées</span>
+              <span style="font-weight:700;color:var(--cyan-600);" id="todayCards">18 / 25</span>
+            </div>
+            <div class="progress"><div class="progress-bar" style="width:72%;background:linear-gradient(90deg,var(--cyan-500),var(--green-500));"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.375rem;">
+              <span style="font-size:0.875rem;color:var(--gray-600);">Temps d'étude</span>
+              <span style="font-weight:700;color:var(--green-600);">45 / 90 min</span>
+            </div>
+            <div class="progress"><div class="progress-bar green" style="width:50%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Study streak -->
+      <div class="card">
+        <div class="card-body" style="text-align:center;">
+          <div style="font-size:3rem;margin-bottom:0.5rem;">🔥</div>
+          <div style="font-size:2.5rem;font-weight:900;color:var(--amber-600);line-height:1;" id="streakVal">14</div>
+          <div style="font-size:0.875rem;color:var(--gray-500);margin-bottom:1rem;">Jours consécutifs</div>
+          <div style="display:flex;justify-content:center;gap:0.375rem;">
+            ${[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0].slice(0,14).map((d,i) => `<div style="width:1.5rem;height:1.5rem;border-radius:4px;background:${d?'var(--amber-500)':'var(--gray-200)'};"></div>`).join('')}
+          </div>
+          <p style="font-size:0.8125rem;color:var(--gray-500);margin-top:0.75rem;">Continuez ! Votre record est de <strong>21 jours</strong></p>
+        </div>
+      </div>
+
+      <!-- Weekly plan -->
+      <div class="card">
+        <div class="card-header"><h5 style="font-weight:700;">📋 Semaine en cours</h5></div>
+        <div class="card-body" style="padding:0.5rem 0;" id="weekPlanList"></div>
+      </div>
+
+      <!-- Specialty distribution -->
+      <div class="card">
+        <div class="card-header"><h5 style="font-weight:700;">Distribution par spécialité</h5></div>
+        <div class="card-body">
+          ${[
+            ['Cardiologie','❤️',25,'var(--red-500)'],
+            ['Neurologie','🧠',20,'var(--purple-500)'],
+            ['Pédiatrie','👶',15,'#db2777'],
+            ['Chirurgie','🔬',18,'var(--amber-500)'],
+            ['Mixte','🏥',22,'var(--primary-500)']
+          ].map(([name,emoji,pct,color]) => `
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+              <span>${emoji}</span>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
+                  <span style="font-size:0.8125rem;color:var(--gray-700);">${name}</span>
+                  <span style="font-size:0.8125rem;font-weight:700;color:var(--gray-700);">${pct}%</span>
+                </div>
+                <div style="height:5px;background:var(--gray-100);border-radius:9999px;overflow:hidden;">
+                  <div style="height:100%;width:${pct}%;background:${color};border-radius:9999px;transition:width 0.8s;"></div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add session modal -->
+<div class="modal-overlay" id="addSessionModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>+ Nouvelle session de révision</h4>
+      <button onclick="closeModal('addSessionModal')" class="btn btn-ghost btn-icon">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" id="sessionDate" value="">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sujet / Spécialité</label>
+        <input type="text" class="form-control" id="sessionTopic" placeholder="Ex: Cardiologie — Insuffisance cardiaque">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Durée (minutes)</label>
+        <select class="form-control form-select" id="sessionDuration">
+          <option>30</option><option>45</option><option selected>60</option><option>90</option><option>120</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-control form-select" id="sessionType">
+          <option value="qcm">QCM</option>
+          <option value="flashcards">Flashcards</option>
+          <option value="exam">Simulation d'examen</option>
+          <option value="course">Lecture de cours</option>
+          <option value="mixed">Mixte</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeModal('addSessionModal')" class="btn btn-ghost">Annuler</button>
+      <button onclick="addSession()" class="btn btn-primary">Ajouter au planning</button>
+    </div>
+  </div>
+</div>
+
+<script src="resources/js/app.js"></script>
+<script src="resources/js/layout.js"></script>
+<script>
+if (!Auth.isLogged()) {
+  localStorage.setItem('rp_user', JSON.stringify({id:'1',firstName:'Ahmed',lastName:'Benali',email:'demo@residanatpro.dz',specialty:'Cardiologie',university:"Faculté d'Alger",examDate:'2026-07-08',plan:'pro',avatar:'AB'}));
+  localStorage.setItem('rp_logged','1');
+}
+renderLayout();
+
+const user = Auth.getUser();
+const examDate = user?.examDate || '2026-07-08';
+
+// Countdown
+function updateCountdown() {
+  const cd = getCountdown(examDate);
+  document.getElementById('mainCountdown').innerHTML = `
+    <div class="countdown-unit"><div class="countdown-value">${String(cd.days).padStart(2,'0')}</div><div class="countdown-label">Jours</div></div>
+    <div style="font-size:2rem;font-weight:900;color:rgba(255,255,255,0.4);align-self:flex-start;padding-top:0.5rem;">:</div>
+    <div class="countdown-unit"><div class="countdown-value">${String(cd.hours).padStart(2,'0')}</div><div class="countdown-label">Heures</div></div>
+    <div style="font-size:2rem;font-weight:900;color:rgba(255,255,255,0.4);align-self:flex-start;padding-top:0.5rem;">:</div>
+    <div class="countdown-unit"><div class="countdown-value">${String(cd.minutes).padStart(2,'0')}</div><div class="countdown-label">Minutes</div></div>
+    <div style="font-size:2rem;font-weight:900;color:rgba(255,255,255,0.4);align-self:flex-start;padding-top:0.5rem;">:</div>
+    <div class="countdown-unit"><div class="countdown-value" id="cdSecs">${String(cd.seconds).padStart(2,'0')}</div><div class="countdown-label">Secondes</div></div>`;
+}
+updateCountdown();
+setInterval(() => {
+  const cd = getCountdown(examDate);
+  const s = document.getElementById('cdSecs');
+  if (s) s.textContent = String(cd.seconds).padStart(2,'0');
+}, 1000);
+
+const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let selectedDate = new Date().toISOString().split('T')[0];
+
+let sessions = Store.get('plan_sessions', [
+  { date:'2026-05-01', topic:'Cardiologie — Insuffisance cardiaque', duration:60, type:'qcm', done:false },
+  { date:'2026-05-01', topic:'Flashcards Cardiologie', duration:30, type:'flashcards', done:true },
+  { date:'2026-05-02', topic:'Neurologie — AVC ischémique', duration:90, type:'course', done:false },
+  { date:'2026-05-03', topic:'Simulation d\'examen #9', duration:120, type:'exam', done:false },
+  { date:'2026-05-04', topic:'Pédiatrie — Infections', duration:60, type:'qcm', done:false },
+  { date:'2026-05-05', topic:'Pharmacologie — Antibiotiques', duration:75, type:'flashcards', done:false },
+  { date:'2026-04-30', topic:'Urgences — RCP', duration:60, type:'qcm', done:true },
+  { date:'2026-04-29', topic:'Chirurgie — Urgences abdominales', duration:90, type:'qcm', done:true },
+]);
+
+const typeIcons = { qcm:'📚', flashcards:'🃏', exam:'⏱️', course:'📖', mixed:'🎯' };
+const typeLabels = { qcm:'QCM', flashcards:'Flashcards', exam:'Simulation', course:'Cours', mixed:'Mixte' };
+
+function renderCalendar() {
+  const grid = document.getElementById('calGrid');
+  document.getElementById('calMonthTitle').textContent = months[currentMonth] + ' ' + currentYear;
+  const today = new Date();
+  const daysOfWeek = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+  grid.innerHTML = daysOfWeek.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  let startDow = firstDay.getDay(); // 0=Sunday
+  startDow = startDow === 0 ? 6 : startDow - 1; // Convert to Mon=0
+
+  // Empty cells before
+  for (let i = 0; i < startDow; i++) {
+    const d = document.createElement('div');
+    d.className = 'calendar-day other-month';
+    const prev = new Date(currentYear, currentMonth, -startDow + i + 1);
+    d.textContent = prev.getDate();
+    grid.appendChild(d);
+  }
+
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = today.getDate() === d && today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+    const hasSess = sessions.some(s => s.date === dateStr);
+    const allDone = hasSess && sessions.filter(s => s.date === dateStr).every(s => s.done);
+    const cell = document.createElement('div');
+    cell.className = `calendar-day${isToday ? ' today' : ''}${hasSess ? ' has-session' : ''}${allDone ? ' completed' : ''}${dateStr === selectedDate ? ' active' : ''}`;
+    cell.textContent = d;
+    cell.style.fontWeight = isToday ? '700' : '';
+    cell.onclick = () => selectDay(dateStr);
+    grid.appendChild(cell);
+  }
+
+  // Fill remaining
+  const totalCells = startDow + lastDay.getDate();
+  const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let i = 1; i <= remaining; i++) {
+    const d = document.createElement('div');
+    d.className = 'calendar-day other-month';
+    d.textContent = i;
+    grid.appendChild(d);
+  }
+}
+
+function prevMonth() { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
+function nextMonth() { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(); }
+
+function selectDay(dateStr) {
+  selectedDate = dateStr;
+  const date = new Date(dateStr);
+  document.getElementById('selectedDayTitle').textContent = date.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  renderCalendar();
+  renderDaySessions();
+}
+
+function renderDaySessions() {
+  const daySessions = sessions.filter(s => s.date === selectedDate);
+  const el = document.getElementById('daySessionsList');
+  if (daySessions.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--gray-400);">Aucune session planifiée<br><button onclick="openModal('addSessionModal')" class="btn btn-outline btn-sm" style="margin-top:0.75rem;">+ Ajouter</button></div>`;
+    return;
+  }
+  el.innerHTML = daySessions.map((s, i) => {
+    const idx = sessions.indexOf(s);
+    return `
+    <div class="session-item${s.done ? ' done' : ''}${s.date === new Date().toISOString().split('T')[0] ? ' today' : ''}" onclick="toggleSession(${idx})">
+      <div style="width:2.5rem;height:2.5rem;border-radius:var(--radius-lg);background:${s.done ? 'var(--green-100)' : 'var(--primary-50)'};display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;">
+        ${s.done ? '✅' : typeIcons[s.type] || '📚'}
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:600;color:${s.done ? 'var(--gray-400)' : 'var(--gray-800)'};font-size:0.9375rem;${s.done ? 'text-decoration:line-through;' : ''}">${s.topic}</div>
+        <div style="font-size:0.8125rem;color:var(--gray-400);">${typeLabels[s.type]} · ${s.duration} min</div>
+      </div>
+      <span class="badge ${s.done ? 'badge-green' : 'badge-gray'}">${s.done ? 'Fait ✓' : 'À faire'}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleSession(idx) {
+  sessions[idx].done = !sessions[idx].done;
+  Store.set('plan_sessions', sessions);
+  renderDaySessions();
+  renderCalendar();
+  if (sessions[idx].done) showToast('Session terminée ! 🎉', 'success');
+}
+
+function addSession() {
+  const session = {
+    date: document.getElementById('sessionDate').value || selectedDate,
+    topic: document.getElementById('sessionTopic').value,
+    duration: parseInt(document.getElementById('sessionDuration').value),
+    type: document.getElementById('sessionType').value,
+    done: false
+  };
+  if (!session.topic) { showToast('Entrez un sujet pour la session', 'error'); return; }
+  sessions.push(session);
+  Store.set('plan_sessions', sessions);
+  closeModal('addSessionModal');
+  selectDay(session.date);
+  showToast('Session ajoutée au planning !', 'success');
+}
+
+// Week plan
+const today = new Date();
+const weekDays = Array.from({length:7}, (_,i) => {
+  const d = new Date(today);
+  d.setDate(today.getDate() + i);
+  return d.toISOString().split('T')[0];
+});
+document.getElementById('weekPlanList').innerHTML = weekDays.map(d => {
+  const daySess = sessions.filter(s => s.date === d);
+  const isToday = d === today.toISOString().split('T')[0];
+  const dayName = new Date(d).toLocaleDateString('fr-FR', {weekday:'short', day:'numeric'});
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.625rem 1rem;cursor:pointer;border-radius:var(--radius-lg);transition:var(--transition);${isToday ? 'background:var(--primary-50);' : ''}" onclick="selectDay('${d}')" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background='${isToday ? 'var(--primary-50)' : ''}'">
+      <span style="font-size:0.875rem;font-weight:${isToday?'700':'500'};color:${isToday?'var(--primary-700)':'var(--gray-700)'};">${isToday ? '📍 Aujourd\'hui' : dayName}</span>
+      ${daySess.length > 0 ? `<span class="badge badge-primary">${daySess.length} session${daySess.length > 1 ? 's' : ''}</span>` : '<span style="font-size:0.8125rem;color:var(--gray-400);">Libre</span>'}
+    </div>`;
+}).join('');
+
+// Set default date in modal
+document.getElementById('sessionDate').value = selectedDate;
+
+// Init
+renderCalendar();
+selectDay(new Date().toISOString().split('T')[0]);
+
+// Responsive
+function adjustPlannerGrid() {
+  const g = document.getElementById('plannerGrid');
+  if (g) g.style.gridTemplateColumns = window.innerWidth < 1024 ? '1fr' : '1fr 340px';
+}
+adjustPlannerGrid(); window.addEventListener('resize', adjustPlannerGrid);
+</script>
+</body>
+</html>

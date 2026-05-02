@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ressources — RésidanatPro</title>
+  <link rel="stylesheet" href="resources/css/main.css">
+  <style>
+    .app-layout { padding-top: var(--navbar-height); }
+    .app-main { margin-left: var(--sidebar-width); padding: 2rem; }
+    @media(max-width:1024px) { .app-main { margin-left:0; } }
+    @media(max-width:768px)  { .app-main { padding:1rem; } }
+    .res-card {
+      background: var(--white);
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      transition: var(--transition-slow);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+    .res-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-xl); border-color: var(--primary-200); }
+    .res-card-thumb {
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+    }
+    .res-card-body { padding: 1rem 1.25rem; flex: 1; }
+    .res-card-footer { padding: 0.75rem 1.25rem; background: var(--gray-50); border-top: 1px solid var(--gray-100); display: flex; justify-content: space-between; align-items: center; }
+    .featured-resource {
+      background: linear-gradient(135deg, var(--primary-700), var(--cyan-600));
+      border-radius: var(--radius-2xl);
+      padding: 2rem;
+      color: white;
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .video-card {
+      background: var(--white);
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      transition: var(--transition-slow);
+      cursor: pointer;
+    }
+    .video-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-xl); }
+    .video-thumb {
+      height: 120px;
+      background: linear-gradient(135deg, #1e293b, #334155);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .play-btn {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+  </style>
+</head>
+<body class="app-layout">
+<div class="toast-container" id="toastContainer"></div>
+<div class="app-main">
+
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h1>📄 Ressources</h1>
+      <p>Cours, protocoles, guidelines et vidéos pour votre préparation</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+      <div class="search-wrap" style="width:260px;">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="form-control" id="resSearch" placeholder="Rechercher...">
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured resource -->
+  <div class="featured-resource">
+    <div style="font-size:4rem;flex-shrink:0;">📘</div>
+    <div style="flex:1;">
+      <span style="font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.1em;">Nouveau</span>
+      <h3 style="color:white;margin:0.375rem 0 0.5rem;font-size:1.5rem;">Annales Résidanat 2024 — Correction complète</h3>
+      <p style="color:rgba(255,255,255,0.75);font-size:0.9375rem;line-height:1.6;max-width:560px;">Toutes les questions de la session 2024 avec corrections détaillées et explications. 240 questions corrigées par nos experts.</p>
+      <div style="display:flex;gap:0.75rem;margin-top:1.25rem;flex-wrap:wrap;">
+        <button onclick="downloadResource('Annales 2024')" class="btn" style="background:white;color:var(--primary-700);font-weight:700;">📥 Télécharger le PDF</button>
+        <button onclick="viewOnline('Annales 2024')" class="btn btn-outline-white">Lire en ligne →</button>
+      </div>
+    </div>
+    <div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:var(--radius-xl);padding:1.25rem;flex-shrink:0;">
+      <div style="font-size:2.5rem;font-weight:900;color:white;">240</div>
+      <div style="font-size:0.875rem;color:rgba(255,255,255,0.7);">Questions corrigées</div>
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-top:0.25rem;">Session Juin 2024</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="resTabs">
+    <div class="tab-item active" onclick="switchResTab('all',this)">Tout</div>
+    <div class="tab-item" onclick="switchResTab('pdf',this)">📄 PDFs & Cours</div>
+    <div class="tab-item" onclick="switchResTab('protocol',this)">🔬 Protocoles</div>
+    <div class="tab-item" onclick="switchResTab('guideline',this)">📋 Guidelines</div>
+    <div class="tab-item" onclick="switchResTab('video',this)">🎬 Vidéos</div>
+    <div class="tab-item" onclick="switchResTab('annales',this)">📝 Annales</div>
+  </div>
+
+  <!-- Stats bar -->
+  <div style="display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-size:1.125rem;">📄</span><span style="font-size:0.875rem;color:var(--gray-600);"><strong>48</strong> PDFs</span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-size:1.125rem;">🔬</span><span style="font-size:0.875rem;color:var(--gray-600);"><strong>32</strong> Protocoles</span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-size:1.125rem;">📋</span><span style="font-size:0.875rem;color:var(--gray-600);"><strong>24</strong> Guidelines</span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-size:1.125rem;">🎬</span><span style="font-size:0.875rem;color:var(--gray-600);"><strong>86</strong> Vidéos</span></div>
+  </div>
+
+  <!-- Resources grid -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;" id="resourcesGrid"></div>
+
+</div>
+
+<script src="resources/js/app.js"></script>
+<script src="resources/js/layout.js"></script>
+<script>
+if (!Auth.isLogged()) {
+  localStorage.setItem('rp_user', JSON.stringify({id:'1',firstName:'Ahmed',lastName:'Benali',email:'demo@residanatpro.dz',specialty:'Cardiologie',university:"Faculté d'Alger",examDate:'2026-07-08',plan:'pro',avatar:'AB'}));
+  localStorage.setItem('rp_logged','1');
+}
+renderLayout();
+
+const RESOURCES = [
+  { id:1, type:'pdf', title:'Insuffisance cardiaque — Cours complet', specialty:'Cardiologie', desc:'Physiopathologie, diagnostic, traitement selon les guidelines ESC 2021. 45 pages.', size:'2.4 MB', icon:'❤️', color:'var(--red-100)', year:2024, downloads:1240 },
+  { id:2, type:'pdf', title:'Neurologie — AVC : prise en charge', specialty:'Neurologie', desc:'Conduite à tenir devant un AVC ischémique et hémorragique. IRM, thrombolyse, thrombectomie.', size:'3.1 MB', icon:'🧠', color:'var(--purple-100)', year:2024, downloads:980 },
+  { id:3, type:'protocol', title:'RCP adulte — Algorithme BLS/ALS', specialty:'Urgences', desc:'Protocole ERC 2021 complet : MCE, défibrillation, médicaments, post-réanimation.', size:'1.2 MB', icon:'🚑', color:'#ffedd5', year:2023, downloads:2100 },
+  { id:4, type:'guideline', title:'HTA — Guidelines ESC/ESH 2023', specialty:'Cardiologie', desc:'Nouvelles recommandations sur le diagnostic et le traitement de l\'hypertension artérielle.', size:'5.8 MB', icon:'📋', color:'var(--primary-100)', year:2023, downloads:1560 },
+  { id:5, type:'pdf', title:'Pédiatrie — Guide pratique des urgences', specialty:'Pédiatrie', desc:'Urgences pédiatriques les plus fréquentes : posologies, algorithmes, valeurs normales.', size:'4.2 MB', icon:'👶', color:'#fce7f3', year:2024, downloads:870 },
+  { id:6, type:'protocol', title:'Sepsis et choc septique — Surviving Sepsis 2023', specialty:'Réanimation', desc:'Bundle de prise en charge du sepsis : antibiotiques, remplissage, vasopresseurs.', size:'2.8 MB', icon:'🔬', color:'var(--green-100)', year:2023, downloads:1890 },
+  { id:7, type:'guideline', title:'Diabète type 2 — ESC/EASD 2023', specialty:'Endocrinologie', desc:'Objectifs glycémiques, choix des antidiabétiques, protection cardiovasculaire et rénale.', size:'6.4 MB', icon:'💉', color:'var(--cyan-100)', year:2023, downloads:1320 },
+  { id:8, type:'annales', title:'Annales Résidanat 2023 — Session Juin', specialty:'Mixte', desc:'240 questions corrigées avec explications détaillées. Format officiel du concours.', size:'8.1 MB', icon:'📝', color:'var(--amber-100)', year:2023, downloads:4200 },
+  { id:9, type:'pdf', title:'Pharmacologie — Guide des antibiotiques', specialty:'Pharmacologie', desc:'Classification, mécanismes, indications, contre-indications et interactions des antibiotiques.', size:'3.7 MB', icon:'💊', color:'var(--primary-100)', year:2024, downloads:760 },
+  { id:10, type:'video', title:'Cardiologie : ECG — Les bases essentielles', specialty:'Cardiologie', desc:'Maîtrisez l\'interprétation de l\'ECG en 2 heures. Rythme, axe, blocs de branche.', duration:'2h15', icon:'🎬', color:'#1e293b', year:2024, views:3400 },
+  { id:11, type:'video', title:'Neurologie : Examen neurologique systématique', specialty:'Neurologie', desc:'Méthode complète d\'examen neurologique. Parfait pour les concours.', duration:'1h30', icon:'🎬', color:'#1e3a5f', year:2024, views:2100 },
+  { id:12, type:'protocol', title:'Appendicite aiguë — Score de Alvarado & prise en charge', specialty:'Chirurgie', desc:'Critères diagnostiques, score d\'Alvarado, indications chirurgicales, cœlioscopie.', size:'1.8 MB', icon:'🔬', color:'var(--amber-100)', year:2024, downloads:650 },
+  { id:13, type:'annales', title:'Annales Résidanat 2022 — Toutes sessions', specialty:'Mixte', desc:'Collection complète des annales 2022 avec corrections et références bibliographiques.', size:'14.2 MB', icon:'📝', color:'var(--amber-100)', year:2022, downloads:5800 },
+  { id:14, type:'guideline', title:'Grossesse : Prise en charge de la prééclampsie', specialty:'Gynécologie', desc:'Définition, facteurs de risque, monitoring, traitement. HAS 2016 + CNGOF 2022.', size:'2.9 MB', icon:'📋', color:'#fce7f3', year:2023, downloads:890 },
+  { id:15, type:'video', title:'Urgences : Prise en charge de l\'état de choc', specialty:'Urgences', desc:'Les 4 types de choc, diagnostic différentiel, traitement en urgence.', duration:'55 min', icon:'🎬', color:'#1e1e2e', year:2024, views:1780 },
+  { id:16, type:'pdf', title:'Méningites bactériennes — SPILF 2019', specialty:'Infectiologie', desc:'Diagnostic, traitement antibiotique en urgence, corticothérapie, prévention.', size:'2.1 MB', icon:'🦠', color:'var(--green-100)', year:2023, downloads:1100 },
+];
+
+const typeLabels = { pdf:'📄 PDF', protocol:'🔬 Protocole', guideline:'📋 Guideline', video:'🎬 Vidéo', annales:'📝 Annales' };
+const typeColors = { pdf:'badge-primary', protocol:'badge-cyan', guideline:'badge-green', video:'badge-purple', annales:'badge-amber' };
+
+let currentFilter = 'all';
+
+function renderResources() {
+  const search = document.getElementById('resSearch').value.toLowerCase();
+  const list = RESOURCES.filter(r => {
+    if (currentFilter !== 'all' && r.type !== currentFilter) return false;
+    if (search && !r.title.toLowerCase().includes(search) && !r.specialty.toLowerCase().includes(search) && !r.desc.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('resourcesGrid');
+  grid.innerHTML = list.map(r => {
+    if (r.type === 'video') {
+      return `
+        <div class="video-card" onclick="playVideo('${r.title}')">
+          <div class="video-thumb" style="background:${r.color};">
+            <div class="play-btn">▶</div>
+            <div style="position:absolute;bottom:0.5rem;right:0.625rem;background:rgba(0,0,0,0.7);color:white;font-size:0.75rem;padding:0.15rem 0.5rem;border-radius:4px;font-weight:600;">${r.duration}</div>
+            <div style="position:absolute;top:0.5rem;left:0.625rem;font-size:2rem;">${r.icon==='🎬'?'🎥':r.icon}</div>
+          </div>
+          <div class="res-card-body">
+            <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+              <span class="badge ${typeColors[r.type]}" style="font-size:0.7rem;">${typeLabels[r.type]}</span>
+              <span class="badge badge-gray" style="font-size:0.7rem;">${r.specialty}</span>
+            </div>
+            <h6 style="font-size:0.9375rem;color:var(--gray-800);margin-bottom:0.375rem;line-height:1.4;">${r.title}</h6>
+            <p style="font-size:0.8125rem;color:var(--gray-500);line-height:1.5;">${r.desc}</p>
+          </div>
+          <div class="res-card-footer">
+            <span style="font-size:0.75rem;color:var(--gray-400);">👁 ${fmt(r.views)} vues</span>
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();playVideo('${r.title}')">▶ Regarder</button>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="res-card" onclick="downloadResource('${r.title}')">
+        <div class="res-card-thumb" style="background:${r.color};">
+          <span style="font-size:3.5rem;">${r.icon}</span>
+        </div>
+        <div class="res-card-body">
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.625rem;flex-wrap:wrap;">
+            <span class="badge ${typeColors[r.type]}" style="font-size:0.7rem;">${typeLabels[r.type]}</span>
+            <span class="badge badge-gray" style="font-size:0.7rem;">${r.specialty}</span>
+            <span class="badge badge-gray" style="font-size:0.7rem;">${r.year}</span>
+          </div>
+          <h6 style="font-size:0.9375rem;color:var(--gray-800);margin-bottom:0.375rem;font-weight:700;line-height:1.4;">${r.title}</h6>
+          <p style="font-size:0.8125rem;color:var(--gray-500);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${r.desc}</p>
+        </div>
+        <div class="res-card-footer">
+          <span style="font-size:0.75rem;color:var(--gray-400);">📥 ${fmt(r.downloads)} téléchargements · ${r.size}</span>
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();downloadResource('${r.title}')">📥</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:3rem;"><div class="empty-icon">🔍</div><h4>Aucune ressource trouvée</h4><p>Essayez des termes de recherche différents</p></div>`;
+  }
+}
+
+function switchResTab(tab, el) {
+  document.querySelectorAll('#resTabs .tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = tab;
+  renderResources();
+}
+
+function downloadResource(title) {
+  showToast(`📥 Téléchargement de "${title}" en cours...`, 'info');
+  setTimeout(() => showToast('✅ PDF téléchargé avec succès !', 'success'), 1800);
+}
+
+function viewOnline(title) {
+  showToast(`📖 Ouverture de "${title}"...`, 'info');
+}
+
+function playVideo(title) {
+  showToast(`🎬 Chargement de la vidéo "${title}"...`, 'info');
+  setTimeout(() => showToast('▶️ Vidéo prête ! (Fonctionnalité en démonstration)', 'info'), 1200);
+}
+
+document.getElementById('resSearch').addEventListener('input', renderResources);
+renderResources();
+</script>
+</body>
+</html>

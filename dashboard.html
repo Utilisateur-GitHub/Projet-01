@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau de bord — RésidanatPro</title>
+  <link rel="stylesheet" href="resources/css/main.css">
+  <style>
+    .app-layout { padding-top: var(--navbar-height); }
+    .app-main { margin-left: var(--sidebar-width); padding: 2rem; min-height: calc(100vh - var(--navbar-height)); }
+    @media(max-width:1024px) { .app-main { margin-left:0; } }
+    @media(max-width:768px)  { .app-main { padding:1rem; } }
+    .welcome-banner {
+      background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-500) 50%, var(--cyan-600) 100%);
+      border-radius: var(--radius-2xl);
+      padding: 2rem 2.5rem;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 2rem;
+    }
+    .welcome-banner::before { content:''; position:absolute; right:-5%; top:-50%; width:300px; height:300px; border-radius:50%; background:rgba(255,255,255,0.06); }
+    .welcome-banner::after  { content:''; position:absolute; right:15%; bottom:-60%; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.05); }
+    .recent-exam-row { display:flex; align-items:center; padding:0.875rem 1rem; border-radius:var(--radius-lg); transition:var(--transition); cursor:pointer; }
+    .recent-exam-row:hover { background:var(--gray-50); }
+    .score-badge { display:inline-flex; align-items:center; justify-content:center; min-width:3.5rem; padding:0.25rem 0.625rem; border-radius:var(--radius-full); font-weight:700; font-size:0.875rem; }
+    .activity-item { display:flex; align-items:flex-start; gap:0.875rem; padding:0.875rem 0; border-bottom:1px solid var(--gray-100); }
+    .activity-item:last-child { border-bottom:none; }
+    .activity-dot { width:0.625rem; height:0.625rem; border-radius:50%; flex-shrink:0; margin-top:0.4rem; }
+    .todo-item { display:flex; align-items:flex-start; gap:0.875rem; padding:0.75rem 0; border-bottom:1px solid var(--gray-100); }
+    .todo-item:last-child { border-bottom:none; }
+  </style>
+</head>
+<body class="app-layout">
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="app-main" id="mainContent">
+  <!-- Content injected here after layout renders -->
+</div>
+
+<script src="resources/js/app.js"></script>
+<script src="resources/js/layout.js"></script>
+<script>
+// Auth check
+if (!Auth.isLogged()) {
+  // For demo: auto-login with demo user
+  const demoUser = {
+    id:'1', firstName:'Ahmed', lastName:'Benali', email:'demo@residanatpro.dz',
+    specialty:'Cardiologie', university:"Faculté de Médecine d'Alger",
+    examDate:'2026-07-08', plan:'pro', joinDate:'2025-09-01', avatar:'AB'
+  };
+  localStorage.setItem('rp_user', JSON.stringify(demoUser));
+  localStorage.setItem('rp_logged','1');
+}
+
+renderLayout();
+
+// Build page content
+const user = Auth.getUser();
+const stats = Store.get('stats', {});
+const specScores = Store.get('specialty_scores', []);
+const recentExams = Store.get('recent_exams', []);
+const plan = Store.get('plan', []);
+
+const cd = getCountdown(user?.examDate || '2026-07-08');
+const globalScore = stats.avgScore || 72;
+const scoreColor = globalScore >= 75 ? 'var(--green-600)' : globalScore >= 60 ? 'var(--amber-600)' : 'var(--red-600)';
+
+// Sort specialties by score ascending (weakest first)
+const weakest = [...specScores].sort((a,b) => a.score - b.score).slice(0,3);
+// Best specialties
+const strongest = [...specScores].sort((a,b) => b.score - a.score).slice(0,3);
+
+const todayPlan = plan.slice(0,3);
+
+document.getElementById('mainContent').innerHTML = `
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <div style="position:relative;z-index:1;">
+      <p style="font-size:0.9375rem;color:rgba(255,255,255,0.75);margin-bottom:0.25rem;">Bonjour, Dr. ${user?.firstName} 👋</p>
+      <h2 style="font-size:1.75rem;font-weight:800;color:white;margin-bottom:0.5rem;letter-spacing:-0.025em;">Continuez vos révisions !</h2>
+      <p style="color:rgba(255,255,255,0.7);font-size:0.9375rem;">Vous avez répondu à <strong style="color:white;">${fmt(stats.totalAnswered||0)}</strong> questions et votre score global est de <strong style="color:white;">${globalScore}%</strong></p>
+      <div style="display:flex;gap:1rem;margin-top:1.25rem;flex-wrap:wrap;">
+        <a href="questions.html" class="btn btn-sm" style="background:white;color:var(--primary-700);font-weight:700;">📚 Continuer les QCM</a>
+        <a href="exam.html" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);">⏱️ Démarrer un examen</a>
+      </div>
+    </div>
+    <div style="position:relative;z-index:1;text-align:center;flex-shrink:0;">
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.65);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.08em;">Résidanat dans</div>
+      <div style="display:flex;gap:0.625rem;align-items:center;">
+        <div style="text-align:center;"><div style="font-size:2rem;font-weight:900;color:white;line-height:1;">${cd.days}</div><div style="font-size:0.625rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.08em;">Jours</div></div>
+        <div style="color:rgba(255,255,255,0.4);font-size:1.5rem;">:</div>
+        <div style="text-align:center;"><div style="font-size:2rem;font-weight:900;color:white;line-height:1;">${cd.hours}</div><div style="font-size:0.625rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.08em;">Heures</div></div>
+        <div style="color:rgba(255,255,255,0.4);font-size:1.5rem;">:</div>
+        <div style="text-align:center;"><div style="font-size:2rem;font-weight:900;color:white;line-height:1;">${cd.minutes}</div><div style="font-size:0.625rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.08em;">Min</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem;" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-icon blue">📚</div>
+      <div class="stat-content">
+        <div class="stat-label">Questions répondues</div>
+        <div class="stat-value" data-target="${stats.totalAnswered||1240}">0</div>
+        <div class="stat-change up">↑ +48 cette semaine</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-content">
+        <div class="stat-label">Score global</div>
+        <div class="stat-value" data-target="${globalScore}" data-suffix="%">0</div>
+        <div class="stat-change up">↑ +4% ce mois</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon cyan">⏱️</div>
+      <div class="stat-content">
+        <div class="stat-label">Examens simulés</div>
+        <div class="stat-value" data-target="${stats.totalExams||8}">0</div>
+        <div class="stat-change up">Dernier: 78%</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber">🔥</div>
+      <div class="stat-content">
+        <div class="stat-label">Série actuelle</div>
+        <div class="stat-value" data-target="${stats.streak||14}" data-suffix=" jours">0</div>
+        <div class="stat-change up">✨ Record personnel !</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:2rem;" class="main-grid-dash">
+
+    <!-- Left column -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+      <!-- Specialty Performance -->
+      <div class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h5 style="font-weight:700;color:var(--gray-900);">Performance par spécialité</h5>
+          <a href="analytics.html" class="btn btn-ghost btn-sm" style="color:var(--primary-600);">Voir tout →</a>
+        </div>
+        <div class="card-body">
+          ${specScores.map(s => `
+            <div style="margin-bottom:1.125rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.375rem;">
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                  <span>${s.emoji}</span>
+                  <span style="font-size:0.9375rem;font-weight:500;color:var(--gray-700);">${s.name}</span>
+                  <span style="font-size:0.75rem;color:var(--gray-400);">${s.answered}/${s.total}</span>
+                </div>
+                <span style="font-weight:700;color:${s.score >= 75 ? 'var(--green-600)' : s.score >= 60 ? 'var(--amber-600)' : 'var(--red-600)'};">${s.score}%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-bar ${s.score >= 75 ? 'green' : s.score >= 60 ? 'amber' : 'red'}" style="width:${s.score}%;"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Recent Exams -->
+      <div class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h5 style="font-weight:700;color:var(--gray-900);">Examens récents</h5>
+          <a href="exam.html" class="btn btn-green btn-sm">+ Nouvel examen</a>
+        </div>
+        <div class="card-body" style="padding:0.5rem 0;">
+          ${recentExams.map(e => `
+            <div class="recent-exam-row" onclick="window.location='exam.html'">
+              <div style="flex:1;">
+                <div style="font-weight:600;color:var(--gray-800);font-size:0.9375rem;">${e.specialty}</div>
+                <div style="font-size:0.8125rem;color:var(--gray-400);">${e.date} · ${e.total} questions · ${e.duration} min</div>
+              </div>
+              <div class="score-badge" style="background:${e.score >= 75 ? 'var(--green-100)' : e.score >= 60 ? 'var(--amber-100)' : 'var(--red-100)'};color:${e.score >= 75 ? 'var(--green-700)' : e.score >= 60 ? 'var(--amber-600)' : 'var(--red-600)'};">${e.score}%</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+      <!-- Global Score Donut -->
+      <div class="card" style="text-align:center;">
+        <div class="card-header"><h5 style="font-weight:700;color:var(--gray-900);text-align:center;">Score global</h5></div>
+        <div class="card-body" style="display:flex;flex-direction:column;align-items:center;gap:1rem;">
+          <div style="position:relative;width:160px;height:160px;">
+            ${createDonut(null, globalScore, 100, scoreColor)}
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <span style="font-size:2.25rem;font-weight:900;color:var(--gray-900);line-height:1;">${globalScore}%</span>
+              <span style="font-size:0.75rem;color:var(--gray-500);">Score moyen</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:1.5rem;text-align:center;">
+            <div><div style="font-size:1.25rem;font-weight:800;color:var(--green-600);">${stats.correctAnswers||0}</div><div style="font-size:0.75rem;color:var(--gray-400);">Correctes</div></div>
+            <div><div style="font-size:1.25rem;font-weight:800;color:var(--red-500);">${(stats.totalAnswered||0)-(stats.correctAnswers||0)}</div><div style="font-size:0.75rem;color:var(--gray-400);">Fausses</div></div>
+          </div>
+          <div style="width:100%;padding:0.75rem;background:var(--primary-50);border-radius:var(--radius-lg);">
+            <p style="font-size:0.8125rem;color:var(--primary-700);font-weight:500;">Objectif: <strong>80%</strong> · Il vous reste <strong>${80-globalScore}%</strong> à combler</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weak points -->
+      <div class="card">
+        <div class="card-header"><h5 style="font-weight:700;color:var(--gray-900);">⚠️ Points faibles</h5></div>
+        <div class="card-body">
+          ${weakest.map((s,i) => `
+            <div style="display:flex;align-items:center;gap:0.75rem;padding:0.625rem 0;${i < weakest.length-1 ? 'border-bottom:1px solid var(--gray-100);' : ''}">
+              <span style="font-size:1.25rem;">${s.emoji}</span>
+              <div style="flex:1;">
+                <div style="font-weight:600;font-size:0.875rem;color:var(--gray-800);">${s.name}</div>
+                <div class="progress" style="margin-top:0.25rem;"><div class="progress-bar red" style="width:${s.score}%;"></div></div>
+              </div>
+              <span style="font-weight:700;color:var(--red-600);font-size:0.875rem;">${s.score}%</span>
+            </div>
+          `).join('')}
+          <a href="questions.html?specialty=weak" class="btn btn-outline btn-sm w-full" style="margin-top:0.75rem;">Réviser ces spécialités →</a>
+        </div>
+      </div>
+
+      <!-- Today's plan -->
+      <div class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h5 style="font-weight:700;color:var(--gray-900);">📅 Aujourd'hui</h5>
+          <a href="planner.html" class="btn btn-ghost btn-sm" style="color:var(--primary-600);">Planning →</a>
+        </div>
+        <div class="card-body" style="padding:0.5rem 0.75rem;">
+          ${todayPlan.map((item, i) => `
+            <div class="todo-item" onclick="toggleTodo(${i})">
+              <div style="width:1.25rem;height:1.25rem;border-radius:50%;border:2px solid var(--gray-300);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;margin-top:0.1rem;transition:all 0.2s;" id="todo-${i}">
+                ${item.done ? '<span style="font-size:0.75rem;">✓</span>' : ''}
+              </div>
+              <div>
+                <div style="font-size:0.875rem;font-weight:500;color:var(--gray-700);${item.done ? 'text-decoration:line-through;color:var(--gray-400);' : ''}">${item.topic}</div>
+                <div style="font-size:0.75rem;color:var(--gray-400);">${item.mins} minutes</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Quick flashcards -->
+      <div class="card" style="background:linear-gradient(135deg,var(--cyan-600),var(--green-600));border:none;">
+        <div class="card-body" style="text-align:center;">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">🃏</div>
+          <h5 style="color:white;margin-bottom:0.375rem;">Flashcards du jour</h5>
+          <p style="color:rgba(255,255,255,0.8);font-size:0.875rem;margin-bottom:1rem;">23 cartes à réviser aujourd'hui selon votre SRS</p>
+          <a href="flashcards.html" class="btn btn-sm w-full" style="background:white;color:var(--cyan-700);font-weight:700;">Réviser maintenant →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly performance chart -->
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="font-weight:700;color:var(--gray-900);">📈 Performance cette semaine</h5>
+      <a href="analytics.html" class="btn btn-ghost btn-sm" style="color:var(--primary-600);">Analytics complets →</a>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;align-items:flex-end;gap:0.875rem;height:180px;" id="weeklyChart"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--gray-100);">
+        <span style="font-size:0.875rem;color:var(--gray-500);">Moyenne : <strong style="color:var(--gray-800);">75%</strong></span>
+        <span style="font-size:0.875rem;color:var(--gray-500);">Meilleur : <strong style="color:var(--green-600);">83%</strong> (Samedi)</span>
+        <span style="font-size:0.875rem;color:var(--gray-500);">Tendance : <strong style="color:var(--green-600);">↑ En hausse</strong></span>
+      </div>
+    </div>
+  </div>
+`;
+
+// Animate stat counters
+document.querySelectorAll('.stat-value[data-target]').forEach(el => {
+  const target = parseInt(el.dataset.target);
+  const suffix = el.dataset.suffix || '';
+  animateCounter(el, target);
+  if (suffix) setTimeout(() => { el.textContent = el.textContent + suffix; }, 1250);
+});
+
+// Animate donuts
+animateDonuts();
+
+// Weekly chart
+const weeklyData = Store.get('weekly_scores', []);
+const chartContainer = document.getElementById('weeklyChart');
+if (chartContainer) {
+  const maxVal = Math.max(...weeklyData.map(d => d.value), 100);
+  weeklyData.forEach((item, i) => {
+    const pct = item.value ? Math.round((item.value / maxVal) * 100) : 0;
+    const isToday = i === new Date().getDay() - 1;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.375rem;flex:1;';
+    div.innerHTML = `
+      <div style="font-size:0.8125rem;font-weight:700;color:${isToday ? 'var(--primary-600)' : 'var(--gray-600)'};">${item.value || '—'}${item.value ? '%' : ''}</div>
+      <div style="width:100%;border-radius:6px 6px 0 0;background:${isToday ? 'linear-gradient(180deg,var(--primary-400),var(--primary-700))' : 'linear-gradient(180deg,var(--gray-300),var(--gray-400))'};height:0%;transition:height 0.8s ease;" data-h="${pct}%"></div>
+      <div style="font-size:0.8125rem;color:${isToday ? 'var(--primary-700)' : 'var(--gray-500)'};font-weight:${isToday ? '700' : '500'};">${item.label}</div>
+    `;
+    chartContainer.appendChild(div);
+  });
+  setTimeout(() => {
+    chartContainer.querySelectorAll('[data-h]').forEach(b => { b.style.height = b.dataset.h; });
+  }, 100);
+}
+
+// Responsive grid
+function adjustDashGrid() {
+  const grid = document.getElementById('statsGrid');
+  const mainGrid = document.querySelector('.main-grid-dash');
+  if (grid) grid.style.gridTemplateColumns = window.innerWidth < 768 ? 'repeat(2,1fr)' : window.innerWidth < 480 ? '1fr' : 'repeat(4,1fr)';
+  if (mainGrid) mainGrid.style.gridTemplateColumns = window.innerWidth < 1100 ? '1fr' : '2fr 1fr';
+}
+adjustDashGrid(); window.addEventListener('resize', adjustDashGrid);
+
+// Todo toggle
+const planData = Store.get('plan', []);
+function toggleTodo(i) {
+  const el = document.getElementById(`todo-${i}`);
+  planData[i].done = !planData[i].done;
+  Store.set('plan', planData);
+  if (planData[i].done) {
+    el.style.background = 'var(--green-600)';
+    el.style.borderColor = 'var(--green-600)';
+    el.innerHTML = '<span style="font-size:0.75rem;color:white;">✓</span>';
+    showToast('Super ! Tâche terminée ! 🎉', 'success');
+  } else {
+    el.style.background = '';
+    el.style.borderColor = 'var(--gray-300)';
+    el.innerHTML = '';
+  }
+}
+</script>
+</body>
+</html>

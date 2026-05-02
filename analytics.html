@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics — RésidanatPro</title>
+  <link rel="stylesheet" href="resources/css/main.css">
+  <style>
+    .app-layout { padding-top: var(--navbar-height); }
+    .app-main { margin-left: var(--sidebar-width); padding: 2rem; }
+    @media(max-width:1024px) { .app-main { margin-left:0; } }
+    @media(max-width:768px)  { .app-main { padding:1rem; } }
+    .chart-section { background:var(--white); border:1px solid var(--gray-200); border-radius:var(--radius-xl); overflow:hidden; box-shadow:var(--shadow-sm); }
+    .chart-section .chart-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center; }
+    .chart-section .chart-body  { padding:1.5rem; }
+    .spec-row { display:flex; align-items:center; gap:1rem; padding:0.875rem 0; border-bottom:1px solid var(--gray-100); }
+    .spec-row:last-child { border-bottom:none; }
+    .heatmap-grid { display:grid; grid-template-columns:repeat(14,1fr); gap:4px; }
+    .heatmap-cell { aspect-ratio:1; border-radius:3px; }
+    .insight-card { padding:1.25rem; border-radius:var(--radius-xl); border:1.5px solid; display:flex; gap:1rem; align-items:flex-start; }
+    .insight-card.warn  { background:var(--amber-50);  border-color:var(--amber-200); }
+    .insight-card.good  { background:var(--green-50);  border-color:var(--green-200); }
+    .insight-card.info  { background:var(--primary-50); border-color:var(--primary-200); }
+    .insight-card.tip   { background:var(--cyan-50);   border-color:var(--cyan-200); }
+    .trend-up   { color:var(--green-600); }
+    .trend-down { color:var(--red-600); }
+  </style>
+</head>
+<body class="app-layout">
+<div class="toast-container" id="toastContainer"></div>
+<div class="app-main">
+
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h1>📊 Analytics</h1>
+      <p>Analysez vos performances et identifiez vos points d'amélioration</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;align-items:center;">
+      <select class="form-control form-select" id="periodFilter" style="width:auto;" onchange="updateCharts()">
+        <option value="7">7 derniers jours</option>
+        <option value="30" selected>30 derniers jours</option>
+        <option value="90">3 derniers mois</option>
+        <option value="all">Tout le temps</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="exportReport()">📥 Exporter</button>
+    </div>
+  </div>
+
+  <!-- Global KPI cards -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1.25rem;margin-bottom:2rem;" id="kpiGrid">
+    <div class="stat-card">
+      <div class="stat-icon blue">📚</div>
+      <div class="stat-content">
+        <div class="stat-label">Questions</div>
+        <div class="stat-value" data-target="1240">0</div>
+        <div class="stat-change up">↑ +87 / sem.</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">🎯</div>
+      <div class="stat-content">
+        <div class="stat-label">Score moyen</div>
+        <div class="stat-value" data-target="72" data-suffix="%">0</div>
+        <div class="stat-change up">↑ +4% ce mois</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon cyan">⏱️</div>
+      <div class="stat-content">
+        <div class="stat-label">Temps d'étude</div>
+        <div class="stat-value" data-target="70" data-suffix="h">0</div>
+        <div class="stat-change up">↑ +8h / mois</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber">🔥</div>
+      <div class="stat-content">
+        <div class="stat-label">Série max</div>
+        <div class="stat-value" data-target="21" data-suffix="j">0</div>
+        <div class="stat-change up">Actuelle: 14j</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon purple">🏆</div>
+      <div class="stat-content">
+        <div class="stat-label">Rang estimé</div>
+        <div class="stat-value" style="font-size:1.25rem;">Top 15%</div>
+        <div class="stat-change up">↑ +5% ce mois</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main analytics grid -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:1.5rem;" id="analyticsMainGrid">
+
+    <!-- Score over time chart -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <h5 style="font-weight:700;color:var(--gray-900);">📈 Évolution du score</h5>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="chip active" onclick="setChartPeriod(7,this)">7j</button>
+          <button class="chip" onclick="setChartPeriod(30,this)">30j</button>
+          <button class="chip" onclick="setChartPeriod(90,this)">3m</button>
+        </div>
+      </div>
+      <div class="chart-body">
+        <!-- SVG Line Chart -->
+        <div style="position:relative;height:220px;overflow:hidden;" id="lineChartWrap">
+          <svg id="lineChart" width="100%" height="220" viewBox="0 0 700 220" preserveAspectRatio="none"></svg>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:0.625rem;" id="lineChartLabels"></div>
+        <div style="display:flex;gap:1.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--gray-100);">
+          <div style="display:flex;align-items:center;gap:0.5rem;"><div style="width:12px;height:3px;border-radius:2px;background:var(--primary-600);"></div><span style="font-size:0.8125rem;color:var(--gray-600);">Score</span></div>
+          <div style="display:flex;align-items:center;gap:0.5rem;"><div style="width:12px;height:3px;border-radius:2px;background:var(--cyan-500);border-top:2px dashed var(--cyan-500);"></div><span style="font-size:0.8125rem;color:var(--gray-600);">Moyenne nationale (estimée 68%)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score distribution donut -->
+    <div class="chart-section">
+      <div class="chart-header"><h5 style="font-weight:700;color:var(--gray-900);">Répartition des réponses</h5></div>
+      <div class="chart-body" style="display:flex;flex-direction:column;align-items:center;gap:1.25rem;">
+        <div style="position:relative;width:180px;height:180px;">
+          <svg width="180" height="180" viewBox="0 0 180 180" style="transform:rotate(-90deg);">
+            <!-- Background -->
+            <circle cx="90" cy="90" r="72" fill="none" stroke="var(--gray-100)" stroke-width="20"/>
+            <!-- Correct: 72% -->
+            <circle cx="90" cy="90" r="72" fill="none" stroke="var(--green-500)" stroke-width="20"
+              stroke-dasharray="452.4" stroke-dashoffset="452.4" stroke-linecap="round"
+              style="transition:stroke-dashoffset 1.2s ease;" data-offset="126.7"/>
+            <!-- Incorrect: 20% -->
+            <circle cx="90" cy="90" r="72" fill="none" stroke="var(--red-400)" stroke-width="20"
+              stroke-dasharray="452.4" stroke-dashoffset="-325.7" opacity="0.8"
+              style="transition:stroke-dashoffset 1.4s ease;"/>
+            <!-- Skipped: 8% -->
+            <circle cx="90" cy="90" r="72" fill="none" stroke="var(--gray-300)" stroke-width="20"
+              stroke-dasharray="452.4" stroke-dashoffset="-416.2" opacity="0.6"
+              style="transition:stroke-dashoffset 1.6s ease;"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <span style="font-size:2.25rem;font-weight:900;color:var(--gray-900);line-height:1;">72%</span>
+            <span style="font-size:0.8125rem;color:var(--gray-500);">Taux de réussite</span>
+          </div>
+        </div>
+        <div style="width:100%;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--gray-100);">
+            <div style="display:flex;align-items:center;gap:0.625rem;"><div style="width:10px;height:10px;border-radius:2px;background:var(--green-500);"></div><span style="font-size:0.875rem;color:var(--gray-700);">Correctes</span></div>
+            <span style="font-weight:700;color:var(--green-600);">893 (72%)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--gray-100);">
+            <div style="display:flex;align-items:center;gap:0.625rem;"><div style="width:10px;height:10px;border-radius:2px;background:var(--red-400);"></div><span style="font-size:0.875rem;color:var(--gray-700);">Incorrectes</span></div>
+            <span style="font-weight:700;color:var(--red-500);">248 (20%)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;">
+            <div style="display:flex;align-items:center;gap:0.625rem;"><div style="width:10px;height:10px;border-radius:2px;background:var(--gray-300);"></div><span style="font-size:0.875rem;color:var(--gray-700);">Non répondues</span></div>
+            <span style="font-weight:700;color:var(--gray-500);">99 (8%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specialty performance + heatmap -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;" id="analyticsSecGrid">
+
+    <!-- Specialty breakdown -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <h5 style="font-weight:700;color:var(--gray-900);">Performance par spécialité</h5>
+        <span style="font-size:0.8125rem;color:var(--gray-400);">Triée par score</span>
+      </div>
+      <div class="chart-body" id="specBreakdown"></div>
+    </div>
+
+    <!-- Activity heatmap -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <h5 style="font-weight:700;color:var(--gray-900);">🗓️ Activité (14 derniers jours)</h5>
+      </div>
+      <div class="chart-body">
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem;font-size:0.8125rem;color:var(--gray-500);">
+          <span>Moins</span>
+          <div style="width:14px;height:14px;border-radius:3px;background:var(--gray-100);"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:var(--primary-200);"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:var(--primary-400);"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:var(--primary-600);"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:var(--primary-800);"></div>
+          <span>Plus</span>
+        </div>
+        <!-- Weekly bar chart of study time -->
+        <div style="margin-top:1.5rem;border-top:1px solid var(--gray-100);padding-top:1.25rem;">
+          <p style="font-size:0.875rem;font-weight:600;color:var(--gray-700);margin-bottom:1rem;">Temps d'étude / jour (min)</p>
+          <div style="display:flex;align-items:flex-end;gap:0.5rem;height:100px;" id="studyTimeChart"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bar chart: scores by specialty -->
+  <div class="chart-section" style="margin-bottom:1.5rem;">
+    <div class="chart-header">
+      <h5 style="font-weight:700;color:var(--gray-900);">📊 Score par spécialité</h5>
+      <span style="font-size:0.8125rem;color:var(--gray-400);">Ligne rouge = objectif (75%)</span>
+    </div>
+    <div class="chart-body">
+      <div style="position:relative;height:180px;display:flex;align-items:flex-end;gap:0.75rem;" id="specBarChart"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--gray-100);" id="specBarLegend"></div>
+    </div>
+  </div>
+
+  <!-- Insights + recommendations -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;" id="insightsGrid">
+    <div class="chart-section">
+      <div class="chart-header"><h5 style="font-weight:700;color:var(--gray-900);">💡 Recommandations personnalisées</h5></div>
+      <div class="chart-body" style="display:flex;flex-direction:column;gap:0.875rem;">
+        <div class="insight-card warn">
+          <span style="font-size:1.5rem;">⚠️</span>
+          <div>
+            <div style="font-weight:700;color:var(--amber-700);margin-bottom:0.25rem;">Pédiatrie à renforcer</div>
+            <p style="font-size:0.875rem;color:var(--amber-700);line-height:1.6;">Votre score en Pédiatrie (58%) est en dessous de l'objectif. Consacrez 2 sessions supplémentaires par semaine.</p>
+          </div>
+        </div>
+        <div class="insight-card warn">
+          <span style="font-size:1.5rem;">📉</span>
+          <div>
+            <div style="font-weight:700;color:var(--amber-700);margin-bottom:0.25rem;">Pharmacologie insuffisante</div>
+            <p style="font-size:0.875rem;color:var(--amber-700);line-height:1.6;">61% en Pharmacologie — les questions sur les antibiotiques et les antihypertenseurs sont vos points faibles.</p>
+          </div>
+        </div>
+        <div class="insight-card good">
+          <span style="font-size:1.5rem;">🏆</span>
+          <div>
+            <div style="font-weight:700;color:var(--green-700);margin-bottom:0.25rem;">Excellent en Maladies Infectieuses</div>
+            <p style="font-size:0.875rem;color:var(--green-700);line-height:1.6;">83% — continuez à maintenir ce niveau. Révisez une fois par semaine pour consolider.</p>
+          </div>
+        </div>
+        <div class="insight-card info">
+          <span style="font-size:1.5rem;">📅</span>
+          <div>
+            <div style="font-weight:700;color:var(--primary-700);margin-bottom:0.25rem;">Rythme optimal</div>
+            <p style="font-size:0.875rem;color:var(--primary-700);line-height:1.6;">Pour atteindre 80% avant le Résidanat, maintenez 30 questions/jour et 1 simulation par semaine.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-header"><h5 style="font-weight:700;color:var(--gray-900);">📋 Analyse détaillée</h5></div>
+      <div class="chart-body">
+        <table class="data-table" style="font-size:0.875rem;">
+          <thead>
+            <tr>
+              <th>Spécialité</th>
+              <th>Score</th>
+              <th>Répondues</th>
+              <th>Tendance</th>
+            </tr>
+          </thead>
+          <tbody id="analyticsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Difficulty breakdown -->
+  <div class="chart-section" style="margin-bottom:2rem;">
+    <div class="chart-header"><h5 style="font-weight:700;color:var(--gray-900);">Répartition par difficulté</h5></div>
+    <div class="chart-body">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;" id="diffGrid">
+        <div style="text-align:center;padding:1.5rem;background:var(--green-50);border-radius:var(--radius-xl);border:1.5px solid var(--green-100);">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">🟢</div>
+          <div style="font-size:1.75rem;font-weight:800;color:var(--green-700);">79%</div>
+          <div style="font-weight:600;color:var(--green-700);margin-bottom:0.25rem;">Facile</div>
+          <div style="font-size:0.8125rem;color:var(--gray-500);">420 questions</div>
+        </div>
+        <div style="text-align:center;padding:1.5rem;background:var(--amber-50);border-radius:var(--radius-xl);border:1.5px solid var(--amber-100);">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">🟡</div>
+          <div style="font-size:1.75rem;font-weight:800;color:var(--amber-600);">68%</div>
+          <div style="font-weight:600;color:var(--amber-600);margin-bottom:0.25rem;">Moyen</div>
+          <div style="font-size:0.8125rem;color:var(--gray-500);">580 questions</div>
+        </div>
+        <div style="text-align:center;padding:1.5rem;background:var(--red-50);border-radius:var(--radius-xl);border:1.5px solid var(--red-100);">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">🔴</div>
+          <div style="font-size:1.75rem;font-weight:800;color:var(--red-600);">54%</div>
+          <div style="font-weight:600;color:var(--red-600);margin-bottom:0.25rem;">Difficile</div>
+          <div style="font-size:0.8125rem;color:var(--gray-500);">240 questions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="resources/js/app.js"></script>
+<script src="resources/js/layout.js"></script>
+<script>
+if (!Auth.isLogged()) {
+  localStorage.setItem('rp_user', JSON.stringify({id:'1',firstName:'Ahmed',lastName:'Benali',email:'demo@residanatpro.dz',specialty:'Cardiologie',university:"Faculté d'Alger",examDate:'2026-07-08',plan:'pro',avatar:'AB'}));
+  localStorage.setItem('rp_logged','1');
+}
+renderLayout();
+
+// Animate counters
+document.querySelectorAll('.stat-value[data-target]').forEach(el => {
+  const t = parseInt(el.dataset.target), suf = el.dataset.suffix || '';
+  animateCounter(el, t);
+  if (suf) setTimeout(() => { el.textContent += suf; }, 1250);
+});
+
+// Line chart (SVG)
+const scoreData7  = [62,65,68,71,70,74,72];
+const scoreData30 = [55,58,60,62,61,65,64,67,68,70,69,72,71,74,73,75,74,76,75,77,76,78,77,79,78,80,79,78,77,72];
+const scoreData90 = Array.from({length:90}, (_,i) => Math.max(50, Math.min(85, 55 + i * 0.3 + (Math.random()-0.5)*6)));
+
+function drawLineChart(data) {
+  const svg = document.getElementById('lineChart');
+  const W = 700, H = 220, pad = { t:20, b:30, l:30, r:20 };
+  const chartW = W - pad.l - pad.r, chartH = H - pad.t - pad.b;
+  const minV = 40, maxV = 100;
+  const xStep = chartW / (data.length - 1);
+  const yScale = v => chartH - ((v - minV) / (maxV - minV)) * chartH;
+
+  const pts = data.map((v,i) => [pad.l + i*xStep, pad.t + yScale(v)]);
+  const pathD = pts.map((p,i) => (i===0?'M':'L') + p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+
+  // Area fill
+  const areaD = pathD + ` L${pts[pts.length-1][0]},${pad.t+chartH} L${pts[0][0]},${pad.t+chartH} Z`;
+
+  // Avg line at 68%
+  const avgY = pad.t + yScale(68);
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--primary-500)" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="var(--primary-500)" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    <!-- Grid lines -->
+    ${[50,60,70,80,90].map(v => {
+      const y = pad.t + yScale(v);
+      return `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--gray-100)" stroke-width="1"/>
+              <text x="${pad.l-5}" y="${y+4}" text-anchor="end" font-size="10" fill="var(--gray-400)">${v}%</text>`;
+    }).join('')}
+    <!-- National avg dashed line -->
+    <line x1="${pad.l}" y1="${avgY}" x2="${W-pad.r}" y2="${avgY}" stroke="var(--cyan-400)" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.8"/>
+    <!-- Area fill -->
+    <path d="${areaD}" fill="url(#lineGrad)"/>
+    <!-- Score line -->
+    <path d="${pathD}" fill="none" stroke="var(--primary-600)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Data points -->
+    ${pts.filter((_,i) => i % Math.max(1, Math.floor(data.length/10)) === 0 || i===pts.length-1).map(p => `
+      <circle cx="${p[0]}" cy="${p[1]}" r="4" fill="white" stroke="var(--primary-600)" stroke-width="2"/>
+    `).join('')}
+    <!-- Last point highlight -->
+    <circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="6" fill="var(--primary-600)"/>
+    <text x="${pts[pts.length-1][0]+8}" y="${pts[pts.length-1][1]+4}" font-size="11" font-weight="700" fill="var(--primary-700)">${data[data.length-1]}%</text>
+  `;
+
+  // Labels
+  const labelsEl = document.getElementById('lineChartLabels');
+  const labelCount = Math.min(7, data.length);
+  const step = Math.floor((data.length-1)/(labelCount-1));
+  labelsEl.innerHTML = Array.from({length:labelCount}, (_,i) => {
+    const di = Math.min(i*step, data.length-1);
+    const d = new Date(); d.setDate(d.getDate() - (data.length-1-di));
+    return `<span style="font-size:0.75rem;color:var(--gray-400);">${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>`;
+  }).join('');
+}
+
+let currentPeriod = 30;
+function setChartPeriod(days, btn) {
+  currentPeriod = days;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const data = days === 7 ? scoreData7 : days === 90 ? scoreData90 : scoreData30;
+  drawLineChart(data);
+}
+drawLineChart(scoreData30);
+
+function updateCharts() { drawLineChart(scoreData30); }
+
+// Specialty breakdown
+const specs = Store.get('specialty_scores', [
+  { name:'Cardiologie', emoji:'❤️', score:81, answered:180, total:220, color:'#dc2626' },
+  { name:'Neurologie',  emoji:'🧠', score:65, answered:130, total:200, color:'#7c3aed' },
+  { name:'Pédiatrie',   emoji:'👶', score:58, answered:140, total:240, color:'#db2777' },
+  { name:'Gynécologie', emoji:'🤰', score:74, answered:110, total:150, color:'#be185d' },
+  { name:'Chirurgie',   emoji:'🔬', score:69, answered:200, total:290, color:'#d97706' },
+  { name:'Méd. Interne',emoji:'🩺', score:77, answered:160, total:210, color:'#0891b2' },
+  { name:'Infectieuses',emoji:'🦠', score:83, answered:100, total:120, color:'#059669' },
+  { name:'Pharmacologie',emoji:'💊', score:61, answered:90,  total:150, color:'#2563bc' },
+  { name:'Urgences',    emoji:'🚑', score:70, answered:130, total:185, color:'#ea580c' },
+]);
+
+const sorted = [...specs].sort((a,b) => b.score - a.score);
+
+document.getElementById('specBreakdown').innerHTML = sorted.map(s => `
+  <div class="spec-row">
+    <span style="font-size:1.25rem;flex-shrink:0;">${s.emoji}</span>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
+        <span style="font-size:0.875rem;font-weight:600;color:var(--gray-800);">${s.name}</span>
+        <span style="font-weight:700;font-size:0.875rem;color:${s.score>=75?'var(--green-600)':s.score>=60?'var(--amber-600)':'var(--red-600)'};">${s.score}%</span>
+      </div>
+      <div class="progress" style="height:6px;">
+        <div class="progress-bar ${s.score>=75?'green':s.score>=60?'amber':'red'}" style="width:${s.score}%;"></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--gray-400);margin-top:0.25rem;">${s.answered} / ${s.total} répondues</div>
+    </div>
+  </div>
+`).join('');
+
+// Bar chart by specialty
+const barContainer = document.getElementById('specBarChart');
+const legendContainer = document.getElementById('specBarLegend');
+specs.forEach(s => {
+  const pct = s.score;
+  const col = document.createElement('div');
+  col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.25rem;flex:1;';
+  col.innerHTML = `
+    <span style="font-size:0.8125rem;font-weight:700;color:${pct>=75?'var(--green-600)':pct>=60?'var(--amber-600)':'var(--red-600)'};">${pct}%</span>
+    <div style="width:100%;border-radius:6px 6px 0 0;background:${s.color};opacity:0.85;height:0%;transition:height 0.9s ease;" data-h="${pct}%"></div>
+    <span style="font-size:0.7rem;color:var(--gray-500);text-align:center;white-space:nowrap;">${s.emoji}</span>`;
+  barContainer.appendChild(col);
+  const leg = document.createElement('div');
+  leg.style.cssText = 'display:flex;align-items:center;gap:0.375rem;';
+  leg.innerHTML = `<div style="width:10px;height:10px;border-radius:2px;background:${s.color};"></div><span style="font-size:0.75rem;color:var(--gray-600);">${s.name}</span>`;
+  legendContainer.appendChild(leg);
+});
+// Target line overlay
+barContainer.style.position = 'relative';
+const targetLine = document.createElement('div');
+targetLine.style.cssText = 'position:absolute;left:0;right:0;height:2px;background:var(--red-500);bottom:calc(75%);opacity:0.7;';
+barContainer.appendChild(targetLine);
+setTimeout(() => barContainer.querySelectorAll('[data-h]').forEach(b => b.style.height = b.dataset.h), 200);
+
+// Heatmap
+const heatmap = document.getElementById('heatmapGrid');
+const activities = Array.from({length:14}, () => Math.floor(Math.random()*5));
+const colors = ['var(--gray-100)','var(--primary-100)','var(--primary-300)','var(--primary-500)','var(--primary-700)'];
+activities.forEach((level, i) => {
+  const cell = document.createElement('div');
+  cell.className = 'heatmap-cell';
+  cell.style.background = colors[level];
+  cell.title = `${level * 15} minutes il y a ${13-i} jours`;
+  heatmap.appendChild(cell);
+});
+
+// Study time chart
+const studyChart = document.getElementById('studyTimeChart');
+const studyData = [45,90,60,0,75,120,45,60,90,75,0,80,65,55];
+const maxStudy = Math.max(...studyData, 120);
+studyData.forEach((v, i) => {
+  const pct = Math.round(v / maxStudy * 100);
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;';
+  wrap.innerHTML = `
+    <span style="font-size:0.625rem;color:var(--gray-500);font-weight:600;">${v||''}</span>
+    <div style="width:100%;border-radius:3px 3px 0 0;background:${i===13?'var(--cyan-500)':'var(--cyan-200)'};height:0%;transition:height 0.8s ease;" data-h="${pct}%"></div>
+    <span style="font-size:0.625rem;color:var(--gray-400);">J${i-13||'0'}</span>`;
+  studyChart.appendChild(wrap);
+});
+setTimeout(() => studyChart.querySelectorAll('[data-h]').forEach(b => b.style.height = b.dataset.h), 200);
+
+// Analytics table
+const trends = ['↑ +3%','↑ +5%','↓ -2%','↑ +7%','→ 0%','↑ +2%','↑ +4%','↓ -3%','↑ +1%'];
+document.getElementById('analyticsTable').innerHTML = sorted.map((s,i) => `
+  <tr>
+    <td>${s.emoji} ${s.name}</td>
+    <td><span style="font-weight:700;color:${s.score>=75?'var(--green-600)':s.score>=60?'var(--amber-600)':'var(--red-600)'};">${s.score}%</span></td>
+    <td style="color:var(--gray-500);">${s.answered}</td>
+    <td class="${trends[i].startsWith('↑')?'trend-up':trends[i].startsWith('↓')?'trend-down':''}" style="font-weight:600;">${trends[i]}</td>
+  </tr>
+`).join('');
+
+function exportReport() {
+  showToast('Rapport en cours de génération...', 'info');
+  setTimeout(() => showToast('Rapport exporté avec succès ! (PDF)', 'success'), 1500);
+}
+
+// Responsive
+function adjustAnalyticsGrids() {
+  const kg = document.getElementById('kpiGrid');
+  const mg = document.getElementById('analyticsMainGrid');
+  const sg = document.getElementById('analyticsSecGrid');
+  const ig = document.getElementById('insightsGrid');
+  const dg = document.getElementById('diffGrid');
+  if (kg) kg.style.gridTemplateColumns = window.innerWidth < 900 ? 'repeat(3,1fr)' : window.innerWidth < 600 ? 'repeat(2,1fr)' : 'repeat(5,1fr)';
+  if (mg) mg.style.gridTemplateColumns = window.innerWidth < 960 ? '1fr' : '2fr 1fr';
+  if (sg) sg.style.gridTemplateColumns = window.innerWidth < 960 ? '1fr' : '1fr 1fr';
+  if (ig) ig.style.gridTemplateColumns = window.innerWidth < 960 ? '1fr' : '1fr 1fr';
+  if (dg) dg.style.gridTemplateColumns = window.innerWidth < 600 ? '1fr' : 'repeat(3,1fr)';
+}
+adjustAnalyticsGrids(); window.addEventListener('resize', adjustAnalyticsGrids);
+</script>
+</body>
+</html>

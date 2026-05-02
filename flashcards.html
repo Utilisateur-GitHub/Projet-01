@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcards — RésidanatPro</title>
+  <link rel="stylesheet" href="resources/css/main.css">
+  <style>
+    .app-layout { padding-top: var(--navbar-height); }
+    .app-main { margin-left: var(--sidebar-width); padding: 2rem; }
+    @media(max-width:1024px) { .app-main { margin-left:0; } }
+    @media(max-width:768px)  { .app-main { padding:1rem; } }
+    .deck-card { background:var(--white); border:1.5px solid var(--gray-200); border-radius:var(--radius-xl); padding:1.5rem; cursor:pointer; transition:var(--transition-slow); text-align:center; }
+    .deck-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-xl); border-color:var(--primary-200); }
+    .deck-icon { width:4rem; height:4rem; border-radius:var(--radius-2xl); display:flex; align-items:center; justify-content:center; font-size:1.875rem; margin:0 auto 1rem; }
+    .review-answer-btn { flex:1; padding:0.875rem; font-size:1rem; font-weight:700; border-radius:var(--radius-xl); cursor:pointer; border:2px solid; transition:var(--transition); }
+    .srs-easy   { background:var(--green-100); color:var(--green-700); border-color:var(--green-300); }
+    .srs-easy:hover   { background:var(--green-600); color:white; border-color:var(--green-600); }
+    .srs-ok     { background:var(--cyan-100); color:var(--cyan-700); border-color:var(--cyan-200); }
+    .srs-ok:hover     { background:var(--cyan-600); color:white; border-color:var(--cyan-600); }
+    .srs-hard   { background:var(--amber-100); color:var(--amber-700); border-color:var(--amber-200); }
+    .srs-hard:hover   { background:var(--amber-600); color:white; border-color:var(--amber-600); }
+    .srs-again  { background:var(--red-100); color:var(--red-700); border-color:var(--red-200); }
+    .srs-again:hover  { background:var(--red-600); color:white; border-color:var(--red-600); }
+  </style>
+</head>
+<body class="app-layout">
+<div class="toast-container" id="toastContainer"></div>
+<div class="app-main">
+
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h1>🃏 Flashcards</h1>
+      <p>Mémorisez durablement grâce à la répétition espacée (SRS)</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('addCardModal')">+ Nouvelle carte</button>
+  </div>
+
+  <!-- Today's review banner -->
+  <div style="background:linear-gradient(135deg,var(--primary-700),var(--cyan-600));border-radius:var(--radius-2xl);padding:1.5rem 2rem;color:white;display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h4 style="color:white;margin-bottom:0.25rem;">Révisions du jour</h4>
+      <p style="color:rgba(255,255,255,0.8);font-size:0.9375rem;" id="todayReviewText">23 cartes à réviser aujourd'hui selon votre SRS</p>
+    </div>
+    <div style="display:flex;gap:1rem;align-items:center;">
+      <div style="text-align:center;"><div style="font-size:1.75rem;font-weight:800;color:white;" id="dueCount">23</div><div style="font-size:0.75rem;color:rgba(255,255,255,0.65);">À réviser</div></div>
+      <div style="text-align:center;"><div style="font-size:1.75rem;font-weight:800;color:white;">148</div><div style="font-size:0.75rem;color:rgba(255,255,255,0.65);">Total</div></div>
+      <button class="btn btn-sm" style="background:white;color:var(--primary-700);font-weight:700;" onclick="startReview('due')">Réviser maintenant →</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="flashTabs">
+    <div class="tab-item active" onclick="switchFlashTab('decks',this)">Decks</div>
+    <div class="tab-item" onclick="switchFlashTab('browse',this)">Parcourir</div>
+    <div class="tab-item" onclick="switchFlashTab('stats',this)">Statistiques</div>
+  </div>
+
+  <!-- DECKS panel -->
+  <div id="panelDecks">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.25rem;" id="decksGrid"></div>
+  </div>
+
+  <!-- BROWSE panel -->
+  <div id="panelBrowse" style="display:none;">
+    <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+      <div class="search-wrap" style="flex:1;min-width:200px;"><span class="search-icon">🔍</span><input type="text" class="form-control" id="cardSearch" placeholder="Rechercher une carte..."></div>
+      <select class="form-control form-select" id="cardDeckFilter" style="width:auto;">
+        <option value="">Tous les decks</option>
+      </select>
+    </div>
+    <div id="cardBrowseList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"></div>
+  </div>
+
+  <!-- STATS panel -->
+  <div id="panelStats" style="display:none;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem;" id="flashStatsGrid">
+      <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-content"><div class="stat-label">Maîtrisées</div><div class="stat-value">89</div></div></div>
+      <div class="stat-card"><div class="stat-icon cyan">📖</div><div class="stat-content"><div class="stat-label">En cours</div><div class="stat-value">42</div></div></div>
+      <div class="stat-card"><div class="stat-icon amber">⏳</div><div class="stat-content"><div class="stat-label">À réviser</div><div class="stat-value">23</div></div></div>
+      <div class="stat-card"><div class="stat-icon red">🔴</div><div class="stat-content"><div class="stat-label">Nouvelles</div><div class="stat-value">17</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h5 style="font-weight:700;">Activité des 14 derniers jours</h5></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:flex-end;gap:0.5rem;height:120px;" id="flashActivityChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Interface (overlay) -->
+  <div id="reviewInterface" style="display:none;position:fixed;inset:0;background:var(--gray-50);z-index:300;overflow-y:auto;">
+    <div style="max-width:680px;margin:0 auto;padding:2rem 1.5rem;">
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+        <button class="btn btn-ghost" onclick="endReview()">← Retour</button>
+        <div style="text-align:center;">
+          <div style="font-size:0.875rem;color:var(--gray-500);">Carte <strong id="reviewCurrent">1</strong> / <strong id="reviewTotal">0</strong></div>
+          <div class="progress" style="width:200px;margin-top:0.25rem;"><div class="progress-bar" id="reviewProgress" style="width:0%;"></div></div>
+        </div>
+        <span class="badge badge-primary" id="reviewDeckName">Cardiologie</span>
+      </div>
+
+      <!-- Flashcard -->
+      <div class="flashcard-container" style="min-height:320px;margin-bottom:1.5rem;">
+        <div class="flashcard" id="theCard" onclick="flipCard()">
+          <div class="flashcard-face flashcard-front">
+            <span class="flashcard-tag" id="cardCategory">Définition</span>
+            <h3 id="cardFront" style="font-size:1.5rem;">Question</h3>
+            <p style="color:rgba(255,255,255,0.7);font-size:0.9375rem;">Cliquez pour voir la réponse</p>
+          </div>
+          <div class="flashcard-face flashcard-back">
+            <span class="flashcard-tag">Réponse</span>
+            <h3 id="cardBackTitle" style="font-size:1.125rem;margin-bottom:0.75rem;"></h3>
+            <p id="cardBack" style="font-size:0.9375rem;line-height:1.7;"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Before flip: just the flip hint -->
+      <div id="flipHint" style="text-align:center;color:var(--gray-400);font-size:0.9375rem;">
+        <span>👆 Cliquez sur la carte pour voir la réponse</span>
+      </div>
+
+      <!-- After flip: SRS buttons -->
+      <div id="srsButtons" style="display:none;">
+        <p style="text-align:center;color:var(--gray-600);font-size:0.9375rem;margin-bottom:1rem;">Comment avez-vous trouvé cette carte ?</p>
+        <div style="display:flex;gap:0.75rem;">
+          <button class="review-answer-btn srs-again"  onclick="answerCard(1)">🔄 À revoir<br><small style="font-weight:400;font-size:0.75rem;">&lt; 1 min</small></button>
+          <button class="review-answer-btn srs-hard"   onclick="answerCard(2)">😓 Difficile<br><small style="font-weight:400;font-size:0.75rem;">6 min</small></button>
+          <button class="review-answer-btn srs-ok"     onclick="answerCard(3)">😊 Bien<br><small style="font-weight:400;font-size:0.75rem;">10 min</small></button>
+          <button class="review-answer-btn srs-easy"   onclick="answerCard(4)">😁 Facile<br><small style="font-weight:400;font-size:0.75rem;">4 jours</small></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add card modal -->
+<div class="modal-overlay" id="addCardModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>+ Nouvelle Flashcard</h4>
+      <button onclick="closeModal('addCardModal')" class="btn btn-ghost btn-icon">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Deck / Spécialité</label>
+        <select class="form-control form-select" id="newCardDeck">
+          <option>Cardiologie</option>
+          <option>Neurologie</option>
+          <option>Pédiatrie</option>
+          <option>Pharmacologie</option>
+          <option>Urgences</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catégorie</label>
+        <select class="form-control form-select" id="newCardCat">
+          <option>Définition</option>
+          <option>Médicament</option>
+          <option>Critères diagnostiques</option>
+          <option>Protocole</option>
+          <option>Valeur normale</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Recto (Question)</label>
+        <input type="text" class="form-control" id="newCardFront" placeholder="Ex: Définition de l'insuffisance cardiaque">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Verso (Réponse)</label>
+        <textarea class="form-control" id="newCardBack" rows="4" placeholder="Réponse détaillée..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeModal('addCardModal')" class="btn btn-ghost">Annuler</button>
+      <button onclick="addCustomCard()" class="btn btn-primary">Créer la carte</button>
+    </div>
+  </div>
+</div>
+
+<script src="resources/js/app.js"></script>
+<script src="resources/js/layout.js"></script>
+<script>
+if (!Auth.isLogged()) {
+  localStorage.setItem('rp_user', JSON.stringify({id:'1',firstName:'Ahmed',lastName:'Benali',email:'demo@residanatpro.dz',specialty:'Cardiologie',university:"Faculté d'Alger",examDate:'2026-07-08',plan:'pro',avatar:'AB'}));
+  localStorage.setItem('rp_logged','1');
+}
+renderLayout();
+
+// Flashcard data
+const CARDS = [
+  { id:1, deck:'Cardiologie', cat:'Définition', front:"Insuffisance cardiaque — Définition", back:"Syndrome clinique causé par une anomalie structurale ou fonctionnelle du cœur, entraînant une réduction du débit cardiaque ou une élévation des pressions de remplissage. Critères : dyspnée, œdèmes, signes congestifs + fraction d'éjection altérée ou préservée.", interval:4, dueDate:new Date().toISOString() },
+  { id:2, deck:'Cardiologie', cat:'Médicament', front:"IEC — Mécanisme d'action", back:"Inhibiteurs de l'Enzyme de Conversion. Bloquent la conversion de l'angiotensine I en angiotensine II → vasodilatation + réduction de l'aldostérone → ↓ précharge et postcharge. Indiqués : IC, HTA, néphropathie diabétique.", interval:7, dueDate:new Date().toISOString() },
+  { id:3, deck:'Cardiologie', cat:'Critères diagnostiques', front:"Critères de Framingham (IC)", back:"Majeurs : dyspnée nocturne paroxystique, turgescence jugulaire, crépitants bilatéraux, cardiomégalie, OAP, bruit de galop B3, reflux hépatojugulaire. Mineurs : œdèmes membres inférieurs, dyspnée d'effort, épanchement pleural, FC > 120 bpm.", interval:3, dueDate:new Date().toISOString() },
+  { id:4, deck:'Neurologie', cat:'Définition', front:"AVC ischémique — Fenêtre de thrombolyse", back:"Thrombolyse IV (rt-PA / alteplase) : jusqu'à 4h30 après le début des symptômes. Thrombectomie mécanique : jusqu'à 6h (voire 24h si zone de pénombre étendue selon imagerie). NB : Pas de délai si symptômes au réveil → IRM diffusion/perfusion.", interval:2, dueDate:new Date().toISOString() },
+  { id:5, deck:'Neurologie', cat:'Protocole', front:"Glasgow Coma Scale — Composantes et score max", back:"E (Ouverture des yeux) : 4 pts. V (Réponse verbale) : 5 pts. M (Réponse motrice) : 6 pts. TOTAL MAX : 15. Score ≤ 8 = coma = intubation. Score ≤ 13 = trauma crânien modéré à sévère.", interval:5, dueDate:new Date().toISOString() },
+  { id:6, deck:'Pharmacologie', cat:'Médicament', front:"Amiodarone — Effets indésirables majeurs", back:"🫁 Pneumopathie interstitielle (surveillance radio thorax). 🦋 Thyroïdite (hyper ou hypo → TSH 6 mois). 👁 Microsdépôts cornéens (quasi-constant, bénin). ☀️ Photosensibilité. ⚠️ Hépatotoxicité. ECG : allongement QT.", interval:3, dueDate:new Date().toISOString() },
+  { id:7, deck:'Pharmacologie', cat:'Médicament', front:"β-bloquants — Contre-indications absolues", back:"• Asthme (sauf cardiosélectifs en cas de BPCO légère) • Bradycardie < 50 bpm • BAV 2ème et 3ème degré sans pacemaker • Bloc sino-auriculaire • Choc cardiogénique • Phéochromocytome non traité. Relatif : artérite des membres inférieurs.", interval:6, dueDate:new Date().toISOString() },
+  { id:8, deck:'Pédiatrie', cat:'Valeur normale', front:"Constantes vitales — Nourrisson 1 an", back:"FC : 80–130 bpm. FR : 25–40 cycle/min. PA systolique : ~90 mmHg. Poids moyen : ~10 kg. Taille : ~75 cm. Température normale : 36.5–37.5°C. Diurèse : 1–2 mL/kg/h.", interval:4, dueDate:new Date().toISOString() },
+  { id:9, deck:'Pédiatrie', cat:'Protocole', front:"Réhydratation orale — SRO", back:"Solutions de réhydratation orale (SRO) OMS : Na⁺ 75 mmol/L, K⁺ 20 mmol/L, Cl⁻ 65 mmol/L, citrate 10 mmol/L, glucose 75 mmol/L. Osmolarité : 245 mOsm/L. Indication : déshydratation légère à modérée (< 10%). Dose : 5–10 mL/kg/h.", interval:2, dueDate:new Date().toISOString() },
+  { id:10, deck:'Urgences', cat:'Protocole', front:"RCP adulte — Algorithme BLS", back:"1. Vérifier sécurité. 2. Évaluer réponse + respiration. 3. Appel SAMU 15 / défibrillateur. 4. 30 compressions thoraciques (5–6 cm, 100–120/min). 5. 2 insufflations. 6. Continuer 30:2 jusqu'au DSA. 7. Défibrillation si FV/TV sans pouls. 8. Adrénaline après 3ème choc.", interval:1, dueDate:new Date().toISOString() },
+  { id:11, deck:'Maladies Infectieuses', cat:'Définition', front:"Critères SIRS (Syndrome de Réponse Inflammatoire Systémique)", back:"≥ 2 critères parmi : T° > 38°C ou < 36°C, FC > 90 bpm, FR > 20/min ou PaCO2 < 32 mmHg, GB > 12 000 ou < 4 000 ou > 10% formes jeunes. SEPSIS = SIRS + infection documentée ou suspectée.", interval:3, dueDate:new Date().toISOString() },
+  { id:12, deck:'Médecine Interne', cat:'Critères diagnostiques', front:"Critères diagnostiques — Diabète type 2", back:"• Glycémie à jeun ≥ 1.26 g/L (7 mmol/L) × 2 prélèvements. OU • Glycémie ≥ 2 g/L (11.1 mmol/L) à n'importe quel moment + symptômes. OU • HbA1c ≥ 6.5% × 2. OU • HGPO (75g) à 2h ≥ 2 g/L.", interval:5, dueDate:new Date().toISOString() },
+];
+
+let customCards = Store.get('custom_cards', []);
+let allCards = [...CARDS, ...customCards];
+
+const DECKS = [...new Set(allCards.map(c => c.deck))].map(name => {
+  const cards = allCards.filter(c => c.deck === name);
+  const due = cards.filter(c => new Date(c.dueDate) <= new Date()).length;
+  const emoji = {Cardiologie:'❤️',Neurologie:'🧠',Pharmacologie:'💊',Pédiatrie:'👶',Urgences:'🚑','Maladies Infectieuses':'🦠','Médecine Interne':'🩺'}[name] || '📚';
+  const color = {Cardiologie:'var(--red-100)',Neurologie:'var(--purple-100)',Pharmacologie:'var(--primary-100)',Pédiatrie:'#fce7f3',Urgences:'#ffedd5','Maladies Infectieuses':'var(--green-100)','Médecine Interne':'var(--cyan-100)'}[name] || 'var(--gray-100)';
+  return { name, emoji, color, total: cards.length, due };
+});
+
+// Render decks
+document.getElementById('decksGrid').innerHTML = DECKS.map(d => `
+  <div class="deck-card" onclick="startReview('deck','${d.name}')">
+    <div class="deck-icon" style="background:${d.color};">${d.emoji}</div>
+    <h5 style="margin-bottom:0.375rem;color:var(--gray-900);">${d.name}</h5>
+    <p style="font-size:0.8125rem;color:var(--gray-500);margin-bottom:0.875rem;">${d.total} cartes</p>
+    ${d.due > 0 ? `<span class="badge badge-amber">${d.due} à réviser</span>` : '<span class="badge badge-green">À jour ✓</span>'}
+  </div>
+`).join('');
+
+// Populate deck filter
+const deckFilter = document.getElementById('cardDeckFilter');
+DECKS.forEach(d => { const o = document.createElement('option'); o.textContent = d.name; o.value = d.name; deckFilter.appendChild(o); });
+
+// Browse
+function renderBrowse() {
+  const search = document.getElementById('cardSearch').value.toLowerCase();
+  const deck = document.getElementById('cardDeckFilter').value;
+  const cards = allCards.filter(c => {
+    if (deck && c.deck !== deck) return false;
+    if (search && !c.front.toLowerCase().includes(search) && !c.back.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  document.getElementById('cardBrowseList').innerHTML = cards.map(c => `
+    <div class="card card-hover" style="cursor:default;">
+      <div class="card-body">
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+          <span class="badge badge-primary" style="font-size:0.7rem;">${c.deck}</span>
+          <span class="badge badge-gray" style="font-size:0.7rem;">${c.cat}</span>
+        </div>
+        <h6 style="color:var(--gray-800);margin-bottom:0.5rem;font-size:0.9375rem;">${c.front}</h6>
+        <p style="font-size:0.8125rem;color:var(--gray-600);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${c.back}</p>
+      </div>
+    </div>
+  `).join('');
+}
+document.getElementById('cardSearch').addEventListener('input', renderBrowse);
+document.getElementById('cardDeckFilter').addEventListener('change', renderBrowse);
+renderBrowse();
+
+// Flash stats chart
+const flashChart = document.getElementById('flashActivityChart');
+const days = ['J-13','J-12','J-11','J-10','J-9','J-8','J-7','J-6','J-5','J-4','J-3','J-2','J-1','Auj'];
+const vals = [12,18,8,22,15,19,25,10,20,17,23,14,21,23];
+days.forEach((d,i) => {
+  const pct = Math.round(vals[i] / 25 * 100);
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.25rem;flex:1;';
+  wrap.innerHTML = `
+    <div style="font-size:0.7rem;color:var(--gray-500);font-weight:600;">${vals[i]}</div>
+    <div style="width:100%;border-radius:4px 4px 0 0;background:${i===13?'var(--primary-600)':'var(--primary-200)'};height:0%;transition:height 0.8s ease;" data-h="${pct}%"></div>
+    <div style="font-size:0.625rem;color:var(--gray-400);">${d}</div>`;
+  flashChart.appendChild(wrap);
+});
+setTimeout(() => flashChart.querySelectorAll('[data-h]').forEach(b => b.style.height = b.dataset.h), 200);
+
+// Review logic
+let reviewQueue = [];
+let reviewIdx = 0;
+let isFlipped = false;
+
+function startReview(mode, deckName) {
+  if (mode === 'due') {
+    reviewQueue = allCards.filter(c => new Date(c.dueDate) <= new Date()).sort(() => Math.random() - 0.5);
+  } else {
+    reviewQueue = allCards.filter(c => c.deck === deckName).sort(() => Math.random() - 0.5);
+  }
+  if (reviewQueue.length === 0) { showToast('Aucune carte à réviser pour le moment ! ✅', 'success'); return; }
+  reviewIdx = 0;
+  isFlipped = false;
+  document.getElementById('reviewInterface').style.display = 'block';
+  document.getElementById('reviewTotal').textContent = reviewQueue.length;
+  document.getElementById('reviewDeckName').textContent = deckName || 'Révision du jour';
+  showCard();
+}
+
+function showCard() {
+  if (reviewIdx >= reviewQueue.length) { endReview(); return; }
+  const card = reviewQueue[reviewIdx];
+  isFlipped = false;
+  document.getElementById('theCard').classList.remove('flipped');
+  document.getElementById('cardCategory').textContent = card.cat;
+  document.getElementById('cardFront').textContent = card.front;
+  document.getElementById('cardBackTitle').textContent = card.front;
+  document.getElementById('cardBack').textContent = card.back;
+  document.getElementById('reviewCurrent').textContent = reviewIdx + 1;
+  document.getElementById('reviewProgress').style.width = (reviewIdx / reviewQueue.length * 100) + '%';
+  document.getElementById('flipHint').style.display = 'block';
+  document.getElementById('srsButtons').style.display = 'none';
+}
+
+function flipCard() {
+  if (isFlipped) return;
+  isFlipped = true;
+  document.getElementById('theCard').classList.add('flipped');
+  document.getElementById('flipHint').style.display = 'none';
+  document.getElementById('srsButtons').style.display = 'block';
+}
+
+function answerCard(rating) {
+  // SRS: update interval based on rating
+  const card = reviewQueue[reviewIdx];
+  const nextDays = [0, 0.001, 0.004, 0.007, 4][rating]; // again=1min, hard=6min, ok=10min, easy=4days
+  card.dueDate = new Date(Date.now() + nextDays * 86400000).toISOString();
+  card.interval = nextDays;
+  reviewIdx++;
+
+  if (reviewIdx >= reviewQueue.length) {
+    document.getElementById('reviewProgress').style.width = '100%';
+    setTimeout(endReview, 400);
+    showToast(`🎉 Session terminée ! ${reviewQueue.length} cartes révisées.`, 'success');
+  } else {
+    showCard();
+  }
+}
+
+function endReview() {
+  document.getElementById('reviewInterface').style.display = 'none';
+  // Update due count
+  const due = allCards.filter(c => new Date(c.dueDate) <= new Date()).length;
+  document.getElementById('dueCount').textContent = due;
+  document.getElementById('todayReviewText').textContent = `${due} cartes à réviser aujourd'hui selon votre SRS`;
+}
+
+// Add custom card
+function addCustomCard() {
+  const card = {
+    id: Date.now(), deck: document.getElementById('newCardDeck').value,
+    cat: document.getElementById('newCardCat').value,
+    front: document.getElementById('newCardFront').value,
+    back: document.getElementById('newCardBack').value,
+    interval: 0, dueDate: new Date().toISOString()
+  };
+  if (!card.front || !card.back) { showToast('Remplissez le recto et le verso', 'error'); return; }
+  customCards.push(card);
+  allCards.push(card);
+  Store.set('custom_cards', customCards);
+  closeModal('addCardModal');
+  showToast('Carte créée avec succès !', 'success');
+  renderBrowse();
+}
+
+// Tabs
+function switchFlashTab(tab, el) {
+  document.querySelectorAll('#flashTabs .tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panelDecks').style.display = tab === 'decks' ? 'block' : 'none';
+  document.getElementById('panelBrowse').style.display = tab === 'browse' ? 'block' : 'none';
+  document.getElementById('panelStats').style.display = tab === 'stats' ? 'block' : 'none';
+  if (tab === 'browse') renderBrowse();
+}
+
+// Responsive
+function adjustFlashStats() {
+  const g = document.getElementById('flashStatsGrid');
+  if (g) g.style.gridTemplateColumns = window.innerWidth < 600 ? 'repeat(2,1fr)' : 'repeat(4,1fr)';
+}
+adjustFlashStats(); window.addEventListener('resize', adjustFlashStats);
+</script>
+</body>
+</html>
